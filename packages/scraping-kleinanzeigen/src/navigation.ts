@@ -317,6 +317,57 @@ export async function setLocation(page: Page, location: string) {
 	}
 }
 
+export async function selectSorting(page: Page, sorting: string) {
+	log.info({ sorting }, "Selecting sorting option...");
+	const dropdown = page.locator("#sortingField-selector-inpt");
+	try {
+		await dropdown.waitFor({ state: "visible", timeout: 5000 });
+	} catch {
+		log.warn("Sorting dropdown not found, skipping");
+		return;
+	}
+
+	// Check if already set to the desired sorting
+	const currentValue = await page
+		.locator("#sortingField-selector-value")
+		.inputValue();
+	if (currentValue === sorting) {
+		log.info({ sorting }, "Sorting already set, skipping");
+		return;
+	}
+
+	// Open the dropdown
+	await humanClick(page, dropdown);
+	await humanDelay(page, 400);
+
+	// Click the desired option
+	const option = page.locator(
+		`#sortingField-selector-list li[data-value="${sorting}"]`,
+	);
+	try {
+		await option.waitFor({ state: "visible", timeout: 5000 });
+	} catch {
+		log.warn({ sorting }, "Sorting option not found in dropdown");
+		return;
+	}
+
+	const urlBefore = page.url();
+	await humanClick(page, option);
+
+	// Sorting change triggers a page reload
+	try {
+		await page.waitForURL((url) => url.toString() !== urlBefore, {
+			timeout: 15000,
+		});
+	} catch {
+		log.warn("URL did not change after sorting selection");
+	}
+	await page.waitForLoadState("domcontentloaded");
+	log.info({ sorting, url: page.url() }, "Sorting applied");
+
+	await humanDelay(page, 800);
+}
+
 export async function waitForListings(page: Page) {
 	log.info("Waiting for listings table...");
 	await page.waitForSelector("#srchrslt-adtable", { timeout: 15000 });

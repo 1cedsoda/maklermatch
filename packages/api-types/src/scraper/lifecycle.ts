@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { categoryIdSchema } from "./categories";
+import { sortingSchema } from "./sorting";
 import { ingestListingSchema } from "./ingest";
 
 // ─── Registration ─────────────────────────────────────────────
@@ -132,6 +133,7 @@ export type LogLinePayload = z.infer<typeof logLinePayloadSchema>;
 export const kleinanzeigenSearchSchema = z.object({
 	category: categoryIdSchema,
 	location: z.string(),
+	sorting: sortingSchema.optional(),
 	isPrivate: z.boolean().optional(),
 });
 

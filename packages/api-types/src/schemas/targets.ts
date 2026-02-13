@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { categoryIdSchema } from "../scraper/categories";
+import { sortingSchema } from "../scraper/sorting";
 
 // ─── Search Targets ───────────────────────────────────────────
 
@@ -9,6 +10,7 @@ export const searchTargetSchema = z.object({
 	active: z.boolean(),
 	category: categoryIdSchema,
 	location: z.string(),
+	sorting: sortingSchema.nullable(),
 	isPrivate: z.boolean().nullable(),
 	maxPages: z.number().nullable(),
 	minIntervalMinutes: z.number(),
@@ -23,6 +25,7 @@ export const createTargetRequestSchema = z.object({
 	name: z.string().min(1),
 	category: categoryIdSchema,
 	location: z.string().min(1),
+	sorting: sortingSchema.optional(),
 	isPrivate: z.boolean().optional(),
 	maxPages: z.number().int().positive().optional(),
 	minIntervalMinutes: z.number().int().min(5).optional(),
@@ -36,6 +39,7 @@ export const updateTargetRequestSchema = z.object({
 	active: z.boolean().optional(),
 	category: categoryIdSchema.optional(),
 	location: z.string().min(1).optional(),
+	sorting: sortingSchema.optional(),
 	isPrivate: z.boolean().optional(),
 	maxPages: z.number().int().positive().nullable().optional(),
 	minIntervalMinutes: z.number().int().min(5).optional(),

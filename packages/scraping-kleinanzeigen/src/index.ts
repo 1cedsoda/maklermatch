@@ -28,6 +28,8 @@ export {
 	dismissCookieBanner,
 	navigateToCategory,
 	filterPrivateListings,
+	selectSorting,
 	setLocation,
 	waitForListings,
 } from "./navigation";
+export { extractSorting, type SortingInfo } from "./extract-sorting";

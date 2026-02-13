@@ -14,6 +14,7 @@ import {
 	dismissCookieBanner,
 	navigateToCategory,
 	filterPrivateListings,
+	selectSorting,
 	setLocation,
 	waitForListings,
 	scrapeIncrementally,
@@ -220,6 +221,9 @@ export async function executeScrapePass(
 		await setLocation(kleinanzeigenPage, city);
 		if (search.isPrivate) {
 			await filterPrivateListings(kleinanzeigenPage);
+		}
+		if (search.sorting) {
+			await selectSorting(kleinanzeigenPage, search.sorting);
 		}
 		await waitForListings(kleinanzeigenPage);
 

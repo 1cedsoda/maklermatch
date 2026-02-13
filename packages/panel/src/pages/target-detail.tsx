@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import {
 	CATEGORY_TREE,
+	SORT_OPTIONS,
 	type SearchTarget,
 	type ScrapingTask,
 	type UpdateTargetRequest,
@@ -27,6 +28,7 @@ interface EditForm {
 	name: string;
 	location: string;
 	category: string;
+	sorting: string;
 	maxPages: string;
 	minInterval: string;
 	maxInterval: string;
@@ -39,6 +41,7 @@ function targetToForm(t: SearchTarget): EditForm {
 		name: t.name,
 		location: t.location,
 		category: t.category,
+		sorting: t.sorting ?? "",
 		maxPages: t.maxPages != null ? String(t.maxPages) : "",
 		minInterval: String(t.minIntervalMinutes),
 		maxInterval: String(t.maxIntervalMinutes),
@@ -52,6 +55,7 @@ function formToUpdate(form: EditForm): UpdateTargetRequest {
 		name: form.name,
 		location: form.location,
 		category: form.category,
+		sorting: (form.sorting || undefined) as UpdateTargetRequest["sorting"],
 		maxPages: form.maxPages ? Number(form.maxPages) : null,
 		minIntervalMinutes: Number(form.minInterval),
 		maxIntervalMinutes: Number(form.maxInterval),
@@ -264,6 +268,23 @@ export function TargetDetailPage() {
 								/>
 							</div>
 							<div className="space-y-1">
+								<Label htmlFor="edit-sorting">Sorting</Label>
+								<Select
+									id="edit-sorting"
+									value={form.sorting}
+									onChange={(e) =>
+										setForm({ ...form, sorting: e.target.value })
+									}
+								>
+									<option value="">Default</option>
+									{SORT_OPTIONS.map((opt) => (
+										<option key={opt.value} value={opt.value}>
+											{opt.label}
+										</option>
+									))}
+								</Select>
+							</div>
+							<div className="space-y-1">
 								<Label htmlFor="edit-isPrivate">Private only</Label>
 								<Select
 									id="edit-isPrivate"
@@ -312,6 +333,13 @@ export function TargetDetailPage() {
 							<div>
 								<dt className="text-muted-foreground">Category</dt>
 								<dd className="font-medium">{target.category}</dd>
+							</div>
+							<div>
+								<dt className="text-muted-foreground">Sorting</dt>
+								<dd className="font-medium">
+									{SORT_OPTIONS.find((o) => o.value === target.sorting)
+										?.label ?? "Default"}
+								</dd>
 							</div>
 							<div>
 								<dt className="text-muted-foreground">Max Pages</dt>

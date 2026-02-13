@@ -1,0 +1,1 @@
+ALTER TABLE `search_targets` ADD `sorting` text;

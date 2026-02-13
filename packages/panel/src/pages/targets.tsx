@@ -23,7 +23,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { CATEGORY_TREE } from "@scraper/api-types";
+import { CATEGORY_TREE, SORT_OPTIONS } from "@scraper/api-types";
 import type { SearchTarget, CreateTargetRequest } from "@scraper/api-types";
 import { Select } from "@/components/ui/select";
 
@@ -262,6 +262,7 @@ function CreateTargetForm({
 	const [maxPages, setMaxPages] = useState("");
 	const [minInterval, setMinInterval] = useState("30");
 	const [maxInterval, setMaxInterval] = useState("60");
+	const [sorting, setSorting] = useState("");
 	const [isPrivate, setIsPrivate] = useState<"any" | "yes" | "no">("any");
 
 	const handleSubmit = (e: React.FormEvent) => {
@@ -271,6 +272,9 @@ function CreateTargetForm({
 			location,
 			category,
 			...(maxPages ? { maxPages: Number(maxPages) } : {}),
+			...(sorting
+				? { sorting: sorting as CreateTargetRequest["sorting"] }
+				: {}),
 			...(isPrivate !== "any" ? { isPrivate: isPrivate === "yes" } : {}),
 			minIntervalMinutes: Number(minInterval),
 			maxIntervalMinutes: Number(maxInterval),
@@ -352,6 +356,21 @@ function CreateTargetForm({
 							value={maxInterval}
 							onChange={(e) => setMaxInterval(e.target.value)}
 						/>
+					</div>
+					<div className="space-y-1">
+						<Label htmlFor="sorting">Sorting</Label>
+						<Select
+							id="sorting"
+							value={sorting}
+							onChange={(e) => setSorting(e.target.value)}
+						>
+							<option value="">Default</option>
+							{SORT_OPTIONS.map((opt) => (
+								<option key={opt.value} value={opt.value}>
+									{opt.label}
+								</option>
+							))}
+						</Select>
 					</div>
 					<div className="space-y-1">
 						<Label htmlFor="isPrivate">Private only</Label>

@@ -32,6 +32,7 @@ export const searchTargets = sqliteTable("search_targets", {
 	maxPages: integer("max_pages"),
 	minIntervalMinutes: integer("min_interval_minutes").notNull().default(30),
 	maxIntervalMinutes: integer("max_interval_minutes").notNull().default(60),
+	sorting: text("sorting"),
 	createdAt: text("created_at")
 		.notNull()
 		.$defaultFn(() => new Date().toISOString()),
