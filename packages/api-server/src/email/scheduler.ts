@@ -1,6 +1,10 @@
 import { eq, and, lte } from "drizzle-orm";
 import { db } from "../db";
-import { scheduledSends, conversations } from "../db/schema";
+import {
+	scheduledSends,
+	conversations,
+	conversationMessages,
+} from "../db/schema";
 import { getScraperSocket } from "../socket/scraper";
 import { SocketEvents } from "@scraper/api-types";
 import { logger } from "../logger";
@@ -159,6 +163,17 @@ async function executeSend(
 		db.update(scheduledSends)
 			.set({ status: "sent" })
 			.where(eq(scheduledSends.id, job.id))
+			.run();
+
+		// Persist sent message as conversationMessage (single source of truth)
+		db.insert(conversationMessages)
+			.values({
+				conversationId: job.conversationId,
+				direction: "outbound",
+				channel: "browser",
+				body: job.message,
+				stage: conversation.currentStage,
+			})
 			.run();
 
 		db.update(conversations)
