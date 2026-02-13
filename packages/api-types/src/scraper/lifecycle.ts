@@ -53,6 +53,12 @@ export const scrapeErrorPayloadSchema = z.object({
 
 export type ScrapeErrorPayload = z.infer<typeof scrapeErrorPayloadSchema>;
 
+export const scrapeCancelPayloadSchema = z.object({
+	taskId: z.number(),
+});
+
+export type ScrapeCancelPayload = z.infer<typeof scrapeCancelPayloadSchema>;
+
 // ─── Listing Check ───────────────────────────────────────────
 
 export const listingCheckItemSchema = z.object({

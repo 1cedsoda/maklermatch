@@ -54,11 +54,11 @@ export async function scrapeListingPages(
 			options.category ?? DEFAULT_CATEGORY,
 		);
 
-		log.info("Step 4/6: Filtering private listings...");
-		await filterPrivateListings(kleinanzeigenPage);
-
-		log.info("Step 5/6: Setting location...");
+		log.info("Step 4/6: Setting location...");
 		await setLocation(kleinanzeigenPage, options.location);
+
+		log.info("Step 5/6: Filtering private listings...");
+		await filterPrivateListings(kleinanzeigenPage);
 
 		log.info("Step 6/6: Waiting for listings...");
 		await waitForListings(kleinanzeigenPage);

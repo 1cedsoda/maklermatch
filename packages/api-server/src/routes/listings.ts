@@ -56,6 +56,7 @@ router.get("/", (req, res) => {
 			.select({
 				sellerId: listingDetailSnapshots.sellerId,
 				sellerName: listingDetailSnapshots.sellerName,
+				sellerType: listingDetailSnapshots.sellerType,
 			})
 			.from(listingDetailSnapshots)
 			.where(eq(listingDetailSnapshots.listingId, listing.id))
@@ -68,6 +69,7 @@ router.get("/", (req, res) => {
 			latestVersion: latestVersion ? stripHtml(latestVersion) : null,
 			sellerId: latestDetail?.sellerId ?? null,
 			sellerName: latestDetail?.sellerName ?? null,
+			sellerType: latestDetail?.sellerType ?? null,
 		};
 	});
 

@@ -10,6 +10,7 @@
 		"test": "bun test"
 	},
 	"dependencies": {
+		"@scraper/api-types": "workspace:*",
 		"@scraper/humanize": "workspace:*",
 		"@scraper/scraping-core": "workspace:*",
 		"happy-dom": "^20.6.1",

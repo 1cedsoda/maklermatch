@@ -8,7 +8,7 @@ export const scrapingTasks = sqliteTable("scraping_tasks", {
 	startedAt: text("started_at")
 		.notNull()
 		.$defaultFn(() => new Date().toISOString()),
-	status: text("status", { enum: ["pending", "success", "error"] })
+	status: text("status", { enum: ["pending", "success", "error", "cancelled"] })
 		.notNull()
 		.default("pending"),
 	maxPages: integer("max_pages"),

@@ -89,4 +89,10 @@ export class ApiClient {
 			.timeout(10000)
 			.emitWithAck(SocketEvents.SCRAPE_ERROR, { taskId, errorMessage });
 	}
+
+	async scrapeCancel(taskId: number): Promise<void> {
+		await this.socket
+			.timeout(5000)
+			.emitWithAck(SocketEvents.SCRAPE_CANCEL, { taskId });
+	}
 }

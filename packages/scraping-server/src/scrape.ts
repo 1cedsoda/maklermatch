@@ -179,7 +179,12 @@ function createScrapeHandler(
 export async function executeScrapePass(
 	apiClient: ApiClient,
 	search: KleinanzeigenSearch,
-	opts?: { targetId?: number; maxPages?: number; headless?: boolean },
+	opts?: {
+		targetId?: number;
+		maxPages?: number;
+		headless?: boolean;
+		onTaskStarted?: (taskId: number) => void;
+	},
 ) {
 	const city = search.location;
 	const maxPages = opts?.maxPages;
@@ -195,6 +200,7 @@ export async function executeScrapePass(
 	}
 
 	const { taskId } = await apiClient.scrapeStart(targetId, { maxPages });
+	opts?.onTaskStarted?.(taskId);
 
 	const identity = await generateIdentity(loadProxies(PROXIES_PATH));
 	const { browser, page } = await launchBrowser(identity, {
@@ -211,10 +217,10 @@ export async function executeScrapePass(
 		const kleinanzeigenPage = await searchViaStartpage(page);
 		await dismissCookieBanner(kleinanzeigenPage);
 		await navigateToCategory(kleinanzeigenPage, categoryInfo);
+		await setLocation(kleinanzeigenPage, city);
 		if (search.isPrivate) {
 			await filterPrivateListings(kleinanzeigenPage);
 		}
-		await setLocation(kleinanzeigenPage, city);
 		await waitForListings(kleinanzeigenPage);
 
 		// ── Incremental scrape with callbacks ──

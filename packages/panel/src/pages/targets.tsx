@@ -262,6 +262,7 @@ function CreateTargetForm({
 	const [maxPages, setMaxPages] = useState("");
 	const [minInterval, setMinInterval] = useState("30");
 	const [maxInterval, setMaxInterval] = useState("60");
+	const [isPrivate, setIsPrivate] = useState<"any" | "yes" | "no">("any");
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -270,6 +271,7 @@ function CreateTargetForm({
 			location,
 			category,
 			...(maxPages ? { maxPages: Number(maxPages) } : {}),
+			...(isPrivate !== "any" ? { isPrivate: isPrivate === "yes" } : {}),
 			minIntervalMinutes: Number(minInterval),
 			maxIntervalMinutes: Number(maxInterval),
 		});
@@ -350,6 +352,20 @@ function CreateTargetForm({
 							value={maxInterval}
 							onChange={(e) => setMaxInterval(e.target.value)}
 						/>
+					</div>
+					<div className="space-y-1">
+						<Label htmlFor="isPrivate">Private only</Label>
+						<Select
+							id="isPrivate"
+							value={isPrivate}
+							onChange={(e) =>
+								setIsPrivate(e.target.value as "any" | "yes" | "no")
+							}
+						>
+							<option value="any">any</option>
+							<option value="yes">yes</option>
+							<option value="no">no</option>
+						</Select>
 					</div>
 					<div className="sm:col-span-2 flex gap-2">
 						<Button type="submit">Create</Button>

@@ -2,7 +2,7 @@ import { io } from "socket.io-client";
 import { SCRAPER_SECRET, SocketEvents } from "@scraper/api-types";
 import { setLogLineHandler as setKleinanzeigenLogHandler } from "@scraper/scraping-kleinanzeigen";
 import { ApiClient } from "./api-client";
-import { setupScraperHandlers } from "./socket-handlers";
+import { setupScraperHandlers, getCurrentTaskId } from "./socket-handlers";
 import { logger, setLogLineHandler } from "./logger";
 
 const log = logger.child({ module: "main" });
@@ -46,3 +46,21 @@ log.info(
 	{ apiServer: API_SERVER_URL },
 	"Scraping client starting (trigger-only mode)",
 );
+
+const shutdown = async (signal: string) => {
+	log.info({ signal }, "Received shutdown signal");
+	const taskId = getCurrentTaskId();
+	if (taskId !== null) {
+		log.info({ taskId }, "Cancelling running task before exit");
+		try {
+			await apiClient.scrapeCancel(taskId);
+		} catch (err) {
+			log.warn({ err }, "Failed to send cancel event");
+		}
+	}
+	socket.disconnect();
+	process.exit(0);
+};
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));

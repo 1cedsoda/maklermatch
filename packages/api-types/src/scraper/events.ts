@@ -5,6 +5,7 @@ import type {
 	ScrapeResultPayload,
 	ScrapeResultAck,
 	ScrapeErrorPayload,
+	ScrapeCancelPayload,
 	ListingCheckPayload,
 	ListingCheckAck,
 	IngestListingsPayload,
@@ -20,6 +21,7 @@ export const SocketEvents = {
 	SCRAPE_START: "scrape:start",
 	SCRAPE_RESULT: "scrape:result",
 	SCRAPE_ERROR: "scrape:error",
+	SCRAPE_CANCEL: "scrape:cancel",
 	LISTING_CHECK: "listing:check",
 	INGEST_LISTINGS: "listing:ingest",
 	SCRAPER_STATUS: "scraper:status",
@@ -43,6 +45,10 @@ export interface ScraperToServerEvents {
 	) => void;
 	[SocketEvents.SCRAPE_ERROR]: (
 		data: ScrapeErrorPayload,
+		ack: (response: { ok: true }) => void,
+	) => void;
+	[SocketEvents.SCRAPE_CANCEL]: (
+		data: ScrapeCancelPayload,
 		ack: (response: { ok: true }) => void,
 	) => void;
 	[SocketEvents.LISTING_CHECK]: (

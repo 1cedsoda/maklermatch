@@ -82,6 +82,7 @@ export const listingWithLatestVersionSchema = listingSchema.extend({
 	latestVersion: listingAbstractSnapshotSchema.nullable(),
 	sellerId: z.number().nullable(),
 	sellerName: z.string().nullable(),
+	sellerType: z.enum(["private", "commercial"]).nullable(),
 });
 
 export const listingWithVersionsSchema = listingSchema.extend({

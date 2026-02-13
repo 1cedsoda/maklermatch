@@ -8,6 +8,7 @@ import {
 	scrapeStartPayloadSchema,
 	scrapeResultPayloadSchema,
 	scrapeErrorPayloadSchema,
+	scrapeCancelPayloadSchema,
 	listingCheckPayloadSchema,
 	ingestListingsPayloadSchema,
 	logLinePayloadSchema,
@@ -42,6 +43,7 @@ const scrapers = new Map<string, ScraperInfo>();
 // ─── Server-side scraper running state ───────────────────────
 
 let currentScrapingTaskId: number | null = null;
+let disconnectCancelTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function isScraperRunning(): boolean {
 	return currentScrapingTaskId !== null;
@@ -96,7 +98,31 @@ export function setupScraperSocket(server: SocketIOServer) {
 				"Scraper disconnected",
 			);
 			scrapers.delete(socket.id);
+
+			const orphanedTaskId = currentScrapingTaskId;
 			currentScrapingTaskId = null;
+
+			if (orphanedTaskId !== null) {
+				log.info(
+					{ taskId: orphanedTaskId },
+					"Scraper disconnected with running task, waiting 10s before marking cancelled",
+				);
+				disconnectCancelTimer = setTimeout(() => {
+					disconnectCancelTimer = null;
+					const task = getScrapingTask(orphanedTaskId);
+					if (task && task.status === "pending") {
+						log.info(
+							{ taskId: orphanedTaskId },
+							"Task still pending after grace period, marking as cancelled",
+						);
+						const errorLogs = getLogLines(socket.id);
+						updateScrapingTask(orphanedTaskId, {
+							status: "cancelled",
+							errorLogs,
+						});
+					}
+				}, 10_000);
+			}
 		});
 
 		socket.on(SocketEvents.REGISTER, (data, ack) => {
@@ -207,6 +233,25 @@ export function setupScraperSocket(server: SocketIOServer) {
 				errorLogs,
 			});
 			currentScrapingTaskId = null;
+			ack({ ok: true });
+		});
+
+		socket.on(SocketEvents.SCRAPE_CANCEL, (data, ack) => {
+			const parsed = scrapeCancelPayloadSchema.safeParse(data);
+			if (!parsed.success) {
+				return;
+			}
+			const errorLogs = getLogLines(socket.id);
+			updateScrapingTask(parsed.data.taskId, {
+				status: "cancelled",
+				errorLogs,
+			});
+			log.info({ taskId: parsed.data.taskId }, "Task cancelled by scraper");
+			currentScrapingTaskId = null;
+			if (disconnectCancelTimer) {
+				clearTimeout(disconnectCancelTimer);
+				disconnectCancelTimer = null;
+			}
 			ack({ ok: true });
 		});
 	});

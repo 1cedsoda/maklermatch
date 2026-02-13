@@ -101,6 +101,8 @@ function StatusBadge({ status }: { status: string }) {
 			? "default"
 			: status === "error"
 				? "destructive"
-				: "secondary";
+				: status === "cancelled"
+					? "outline"
+					: "secondary";
 	return <Badge variant={variant}>{status}</Badge>;
 }

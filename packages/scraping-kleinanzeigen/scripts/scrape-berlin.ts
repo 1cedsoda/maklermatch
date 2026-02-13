@@ -200,10 +200,10 @@ async function main() {
 		await dismissCookieBanner(kleinanzeigenPage);
 		const categoryInfo = getCategoryById(search.category)!;
 		await navigateToCategory(kleinanzeigenPage, categoryInfo);
+		await setLocation(kleinanzeigenPage, city);
 		if (search.isPrivate) {
 			await filterPrivateListings(kleinanzeigenPage);
 		}
-		await setLocation(kleinanzeigenPage, city);
 		await waitForListings(kleinanzeigenPage);
 
 		// ── Incremental scrape ──

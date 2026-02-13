@@ -17,7 +17,7 @@ export function ListingsPage() {
 	const page = Number(searchParams.get("page")) || 1;
 	const [listings, setListings] = useState<ListingWithLatestVersion[]>([]);
 	const [total, setTotal] = useState(0);
-	const limit = 20;
+	const limit = 50;
 
 	useEffect(() => {
 		api.getListings(page, limit).then((res) => {
@@ -38,17 +38,18 @@ export function ListingsPage() {
 			<Table>
 				<TableHeader>
 					<TableRow>
-						<TableHead>Title</TableHead>
+						<TableHead className="max-w-75">Title</TableHead>
 						<TableHead>Price</TableHead>
 						<TableHead>Location</TableHead>
 						<TableHead>Seller</TableHead>
+						<TableHead>Type</TableHead>
 						<TableHead>Last Seen</TableHead>
 					</TableRow>
 				</TableHeader>
 				<TableBody>
 					{listings.map((listing) => (
 						<TableRow key={listing.id}>
-							<TableCell>
+							<TableCell className="max-w-75 truncate">
 								<Link
 									to={`/listings/${listing.id}`}
 									className="text-foreground hover:underline"
@@ -70,6 +71,7 @@ export function ListingsPage() {
 									"-"
 								)}
 							</TableCell>
+							<TableCell>{listing.sellerType ?? "-"}</TableCell>
 							<TableCell>
 								{new Date(listing.lastSeen).toLocaleString()}
 							</TableCell>

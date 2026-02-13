@@ -15,6 +15,7 @@ type TypedSocket = Socket<ServerToScraperEvents, ScraperToServerEvents>;
 
 let isRunning = false;
 let lastRunAt: string | null = null;
+let currentTaskId: number | null = null;
 
 export function setRunning() {
 	isRunning = true;
@@ -22,7 +23,12 @@ export function setRunning() {
 
 export function setIdle() {
 	isRunning = false;
+	currentTaskId = null;
 	lastRunAt = new Date().toISOString();
+}
+
+export function getCurrentTaskId(): number | null {
+	return currentTaskId;
 }
 
 export function setupScraperHandlers(
@@ -59,6 +65,9 @@ export function setupScraperHandlers(
 				targetId,
 				maxPages,
 				headless,
+				onTaskStarted: (taskId) => {
+					currentTaskId = taskId;
+				},
 			});
 		} finally {
 			setIdle();

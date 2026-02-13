@@ -256,7 +256,7 @@ export function getScrapingTask(id: number) {
 export function updateScrapingTask(
 	id: number,
 	data: {
-		status?: "pending" | "success" | "error";
+		status?: "pending" | "success" | "error" | "cancelled";
 		pagesScraped?: number;
 		listingsFound?: number;
 		detailsScraped?: number;

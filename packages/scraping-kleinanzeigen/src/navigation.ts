@@ -77,10 +77,58 @@ export async function dismissCookieBanner(page: Page) {
 		// Reading pause before clicking accept
 		await humanDelay(page, 1200);
 
+		// After clicking, verify by checking the accept button is gone
+		// (not the broad gdpr container — leftover DOM nodes with gdpr classes
+		// can persist after the banner is dismissed).
+		const bannerGone = async () => {
+			await banner.waitFor({ state: "hidden", timeout: 5000 });
+		};
+
+		// Strategy 1: human-like click
 		log.info("Banner found, clicking...");
 		await humanClick(page, banner);
-		log.info("Cookie banner dismissed");
-	} catch {
+		try {
+			await bannerGone();
+			log.info("Cookie banner dismissed");
+			return;
+		} catch {
+			log.warn("Cookie banner still visible after human click");
+		}
+
+		// Strategy 2: force click (bypasses actionability checks)
+		log.info("Retrying with force click...");
+		await banner.click({ force: true });
+		try {
+			await bannerGone();
+			log.info("Cookie banner dismissed on force click");
+			return;
+		} catch {
+			log.warn("Cookie banner still visible after force click");
+		}
+
+		// Strategy 3: JS-level click (avoids mouse/pointer issues entirely)
+		log.info("Retrying with JS click...");
+		await page.evaluate(() => {
+			const btn = document.querySelector<HTMLElement>("#gdpr-banner-accept");
+			btn?.click();
+		});
+		try {
+			await bannerGone();
+			log.info("Cookie banner dismissed via JS click");
+			return;
+		} catch {
+			log.warn("Cookie banner still visible after JS click");
+		}
+
+		// All strategies failed — cannot continue with banner blocking the page
+		throw new Error(
+			"Failed to dismiss cookie banner after 3 attempts — banner is blocking page interactions",
+		);
+	} catch (err) {
+		// Re-throw dismissal failures, only swallow "banner not found"
+		if (err instanceof Error && err.message.includes("Failed to dismiss")) {
+			throw err;
+		}
 		log.info("No cookie banner appeared");
 	}
 }
@@ -119,7 +167,7 @@ export async function navigateToCategory(
 		waitUntil: "domcontentloaded",
 		timeout: 60000,
 	});
-	log.info({ url: page.url() }, "Category page loaded");
+	log.info(`Category page loaded: ${page.url()}`);
 
 	// Brief scroll before applying filters — simulate human scanning the page
 	await humanScroll(page, Math.round(150 + Math.random() * 200));
@@ -133,14 +181,22 @@ export async function filterPrivateListings(page: Page) {
 	);
 	try {
 		await filterLink.waitFor({ state: "visible", timeout: 5000 });
+		const urlBefore = page.url();
 		await humanClick(page, filterLink);
+
+		try {
+			await page.waitForURL((url) => url.toString() !== urlBefore, {
+				timeout: 15000,
+			});
+		} catch {
+			log.warn("URL did not change after clicking private filter");
+		}
 		await page.waitForLoadState("domcontentloaded");
-		log.info({ url: page.url() }, "Filtered to private listings");
+		log.info(`Filtered to private listings: ${page.url()}`);
 	} catch {
 		log.warn("Private listing filter not available for this category");
 	}
 
-	// Brief scroll before setting location — don't linger
 	await humanScroll(page, Math.round(100 + Math.random() * 150));
 	await humanDelay(page, 800);
 }
@@ -151,12 +207,114 @@ export async function setLocation(page: Page, location: string) {
 	await searchbox.waitFor({ state: "visible", timeout: 10000 });
 	log.info("Searchbox visible, filling...");
 
-	await humanFill(page, searchbox, location);
-	log.info("Text entered, pressing Enter...");
-	await humanDelay(page, 300);
-	await page.keyboard.press("Enter");
-	await page.waitForLoadState("domcontentloaded");
-	log.info({ url: page.url() }, "Location set");
+	const firstOption = page.getByRole("option").first();
+	const maxAttempts = 3;
+	let autocompleteWorked = false;
+
+	for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+		await humanFill(page, searchbox, location);
+
+		// Dispatch multiple events to ensure the autocomplete debounce triggers.
+		// keyboard.insertText (used for non-ASCII like ü/ö) only fires "input",
+		// not keydown/keyup.  Some autocomplete implementations listen on
+		// different event types, so fire all of them.
+		await searchbox.dispatchEvent("input");
+		await searchbox.dispatchEvent("keyup");
+		await searchbox.dispatchEvent("change");
+		log.info({ attempt }, "Text entered, waiting for autocomplete...");
+
+		try {
+			await firstOption.waitFor({ state: "visible", timeout: 10000 });
+			autocompleteWorked = true;
+			break;
+		} catch {
+			if (attempt < maxAttempts) {
+				log.warn(
+					{ attempt, location },
+					"Autocomplete did not appear, clearing and retrying...",
+				);
+				// Clear the field before next attempt
+				await searchbox.click();
+				await page.keyboard.down("ControlOrMeta");
+				await page.keyboard.press("a");
+				await page.keyboard.up("ControlOrMeta");
+				await page.keyboard.press("Backspace");
+				await humanDelay(page, 500);
+			}
+		}
+	}
+
+	if (autocompleteWorked) {
+		// Wait for the dropdown to settle — options can re-render as results arrive
+		await humanDelay(page, 800);
+
+		// Find the option that matches the desired location, not just the first one
+		const options = page.getByRole("option");
+		const count = await options.count();
+		let matched = firstOption;
+		for (let i = 0; i < count; i++) {
+			const text = await options.nth(i).textContent();
+			if (text?.trim().toLowerCase().startsWith(location.toLowerCase())) {
+				matched = options.nth(i);
+				log.info(
+					{ matched: text?.trim(), index: i },
+					"Found matching autocomplete option",
+				);
+				break;
+			}
+		}
+
+		log.info("Clicking autocomplete option...");
+		const urlBefore = page.url();
+		await humanClick(page, matched);
+
+		// Clicking an autocomplete option triggers a page navigation —
+		// wait for the URL to change so the location is actually applied.
+		try {
+			await page.waitForURL((url) => url.toString() !== urlBefore, {
+				timeout: 15000,
+			});
+		} catch {
+			log.warn("URL did not change after autocomplete selection");
+		}
+		await page.waitForLoadState("domcontentloaded");
+		log.info(`Location set via autocomplete: ${page.url()}`);
+	} else {
+		// Fallback: inject location into the current URL path.
+		// Kleinanzeigen URLs support location slugs, e.g.
+		//   /s-haus-kaufen/anbieter:privat/c208
+		//   /s-haus-kaufen/berlin/anbieter:privat/c208
+		log.warn(
+			{ location },
+			"Autocomplete failed after all attempts, falling back to URL navigation",
+		);
+		const locationSlug = location
+			.toLowerCase()
+			.replace(/\s+/g, "-")
+			.replace(/[äÄ]/g, "ae")
+			.replace(/[öÖ]/g, "oe")
+			.replace(/[üÜ]/g, "ue")
+			.replace(/ß/g, "ss")
+			.replace(/[^a-z0-9-]/g, "");
+
+		const currentUrl = new URL(page.url());
+		const pathParts = currentUrl.pathname.split("/").filter(Boolean);
+		// Insert location slug after the category prefix (e.g. "s-haus-kaufen")
+		// but before any filters like "anbieter:privat" and the category id "c208"
+		const categoryPrefixIdx = pathParts.findIndex((p) => p.startsWith("s-"));
+		if (categoryPrefixIdx !== -1) {
+			pathParts.splice(categoryPrefixIdx + 1, 0, locationSlug);
+		} else {
+			pathParts.push(locationSlug);
+		}
+		const newUrl = `${currentUrl.origin}/${pathParts.join("/")}`;
+		log.info({ newUrl }, "Navigating to location URL...");
+		await page.goto(newUrl, {
+			waitUntil: "domcontentloaded",
+			timeout: 60000,
+		});
+		log.info(`Location set via URL fallback: ${page.url()}`);
+	}
 }
 
 export async function waitForListings(page: Page) {
