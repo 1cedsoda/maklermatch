@@ -28,8 +28,8 @@ export const createTargetRequestSchema = z.object({
 	sorting: sortingSchema.optional(),
 	isPrivate: z.boolean().optional(),
 	maxPages: z.number().int().positive().optional(),
-	minIntervalMinutes: z.number().int().min(5).optional(),
-	maxIntervalMinutes: z.number().int().min(5).optional(),
+	minIntervalMinutes: z.number().int().min(1).optional(),
+	maxIntervalMinutes: z.number().int().min(1).optional(),
 });
 
 export type CreateTargetRequest = z.infer<typeof createTargetRequestSchema>;
@@ -42,8 +42,8 @@ export const updateTargetRequestSchema = z.object({
 	sorting: sortingSchema.optional(),
 	isPrivate: z.boolean().optional(),
 	maxPages: z.number().int().positive().nullable().optional(),
-	minIntervalMinutes: z.number().int().min(5).optional(),
-	maxIntervalMinutes: z.number().int().min(5).optional(),
+	minIntervalMinutes: z.number().int().min(1).optional(),
+	maxIntervalMinutes: z.number().int().min(1).optional(),
 });
 
 export type UpdateTargetRequest = z.infer<typeof updateTargetRequestSchema>;
