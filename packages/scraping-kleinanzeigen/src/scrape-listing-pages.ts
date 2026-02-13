@@ -8,7 +8,7 @@ import {
 	setLocation,
 	waitForListings,
 } from "./navigation";
-import { crawlAllPages } from "./crawl";
+import { crawlAllPages, type CrawlResult } from "./crawl";
 import { logger } from "./logger";
 import type { Result } from "@scraper/scraping-core";
 
@@ -23,7 +23,7 @@ export interface ScrapeOptions {
 
 export async function scrapeListingPages(
 	options: ScrapeOptions,
-): Promise<Result<string[]>> {
+): Promise<Result<CrawlResult>> {
 	log.info(
 		{
 			location: options.location,
@@ -57,9 +57,15 @@ export async function scrapeListingPages(
 		await waitForListings(kleinanzeigenPage);
 
 		log.info("All navigation steps complete. Starting crawl...");
-		const pages = await crawlAllPages(kleinanzeigenPage, options.maxPages);
-		log.info({ pageCount: pages.length }, "Scrape finished successfully");
-		return { ok: true, value: pages };
+		const result = await crawlAllPages(kleinanzeigenPage, options.maxPages);
+		log.info(
+			{
+				pageCount: result.pages.length,
+				detailCount: result.details.length,
+			},
+			"Scrape finished successfully",
+		);
+		return { ok: true, value: result };
 	} catch (e) {
 		const error = e as Error;
 		log.error({ err: error }, "Scrape failed");

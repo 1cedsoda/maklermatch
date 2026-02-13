@@ -1,12 +1,15 @@
 import type { Page, Locator } from "patchright";
 import type { DeepPartial, HumanizeConfig } from "./config";
 import { mergeConfig } from "./config";
+import { logger } from "./logger";
 import { randBetween, sleep } from "./random";
 import {
 	getMousePosition,
 	setMousePosition,
 	moveMouseHumanly,
 } from "./mouse-path";
+
+const log = logger.child({ module: "hover" });
 
 /**
  * Move the mouse to an element and hover over it for a natural duration,
@@ -31,6 +34,10 @@ export async function humanHover(
 	const jitter = cfg.mouse.targetJitter;
 	const targetX = box.x + box.width * (0.5 + randBetween(-jitter, jitter));
 	const targetY = box.y + box.height * (0.5 + randBetween(-jitter, jitter));
+	log.debug(
+		{ x: Math.round(targetX), y: Math.round(targetY) },
+		"Hovering over element",
+	);
 
 	// Move mouse to element
 	const currentPos = getMousePosition(page);

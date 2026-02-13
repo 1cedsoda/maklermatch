@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -9,25 +10,25 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import type { Trigger } from "@scraper/api-types";
+import type { ScrapingTask } from "@scraper/api-types";
 
-export function TriggersPage() {
-	const [triggers, setTriggers] = useState<Trigger[]>([]);
+export function ScrapingTasksPage() {
+	const [tasks, setTasks] = useState<ScrapingTask[]>([]);
 
 	useEffect(() => {
-		api.getTriggers().then((res) => setTriggers(res.triggers));
+		api.getScrapingTasks().then((res) => setTasks(res.tasks));
 	}, []);
 
 	return (
 		<div className="space-y-4">
-			<h2 className="text-2xl font-bold">Triggers</h2>
+			<h2 className="text-2xl font-bold">Scraping Tasks</h2>
 
 			<Table>
 				<TableHeader>
 					<TableRow>
 						<TableHead>ID</TableHead>
-						<TableHead>City</TableHead>
-						<TableHead>Triggered At</TableHead>
+						<TableHead>Quest</TableHead>
+						<TableHead>Started At</TableHead>
 						<TableHead>Status</TableHead>
 						<TableHead>Pages</TableHead>
 						<TableHead>Listings</TableHead>
@@ -35,11 +36,21 @@ export function TriggersPage() {
 					</TableRow>
 				</TableHeader>
 				<TableBody>
-					{triggers.map((t) => (
+					{tasks.map((t) => (
 						<TableRow key={t.id}>
 							<TableCell>{t.id}</TableCell>
-							<TableCell>{t.city}</TableCell>
-							<TableCell>{new Date(t.triggeredAt).toLocaleString()}</TableCell>
+							<TableCell>
+								<Link
+									to="/quests"
+									className="text-primary underline-offset-4 hover:underline"
+								>
+									{t.questName}
+								</Link>
+								<span className="ml-1 text-muted-foreground text-xs">
+									({t.questLocation})
+								</span>
+							</TableCell>
+							<TableCell>{new Date(t.startedAt).toLocaleString()}</TableCell>
 							<TableCell>
 								<StatusBadge status={t.status} />
 							</TableCell>

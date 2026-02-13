@@ -8,6 +8,41 @@
 			"when": 1770954327488,
 			"tag": "0000_special_bishop",
 			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "6",
+			"when": 1770985313069,
+			"tag": "0001_cheerful_brood",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "6",
+			"when": 1771545600000,
+			"tag": "0002_normalize_schema",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "6",
+			"when": 1770987248367,
+			"tag": "0003_flowery_dakota_north",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "6",
+			"when": 1770994925094,
+			"tag": "0004_nosy_sphinx",
+			"breakpoints": true
+		},
+		{
+			"idx": 5,
+			"version": "6",
+			"when": 1771027200000,
+			"tag": "0005_rename_triggers_to_scraping_tasks",
+			"breakpoints": true
 		}
 	]
 }

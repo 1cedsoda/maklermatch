@@ -21,15 +21,28 @@ export async function searchViaStartpage(page: Page): Promise<Page> {
 	});
 	log.info({ url: page.url() }, "Startpage loaded");
 
+	const link = page.locator('a[href*="kleinanzeigen.de"]').first();
+	await link.waitFor({ state: "visible", timeout: 10000 });
+
 	const popupPromise = page.waitForEvent("popup");
 	log.info("Clicking Kleinanzeigen link...");
-	await humanClick(
-		page,
-		page.getByText("https://www.kleinanzeigen.de/https://www.kleinanzeigen.de"),
-	);
+	await humanClick(page, link);
 
 	const popup = await popupPromise;
 	log.info({ url: popup.url() }, "Popup opened");
+
+	// Kleinanzeigen may geo-redirect based on proxy IP (e.g. to /s-frankfurt-am-main/k0).
+	// Browse the page naturally, then navigate to the homepage to get the category tree.
+	if (!popup.url().endsWith("kleinanzeigen.de/")) {
+		await humanBrowse(popup);
+		log.info("Navigating to homepage...");
+		await popup.goto("https://www.kleinanzeigen.de/", {
+			waitUntil: "domcontentloaded",
+			timeout: 60000,
+		});
+		log.info({ url: popup.url() }, "Homepage loaded");
+	}
+
 	return popup;
 }
 
@@ -108,7 +121,7 @@ export async function navigateToCategory(page: Page) {
 
 	log.info("Clicking 'Häuser zum Kauf' link...");
 	await humanClick(page, page.getByRole("link", { name: "Häuser zum Kauf" }));
-	await page.waitForLoadState("load");
+	await page.waitForLoadState("domcontentloaded");
 	log.info({ url: page.url() }, "Category page loaded");
 	await humanBrowse(page);
 }
@@ -119,7 +132,7 @@ export async function filterPrivateListings(page: Page) {
 		page,
 		page.locator(".browsebox-itemlist a[href*='anbieter:privat']"),
 	);
-	await page.waitForLoadState("load");
+	await page.waitForLoadState("domcontentloaded");
 	log.info({ url: page.url() }, "Filtered to private listings");
 	await humanBrowse(page);
 }

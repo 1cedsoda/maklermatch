@@ -1,8 +1,11 @@
 import type { Page } from "patchright";
 import type { DeepPartial, HumanizeConfig } from "./config";
 import { mergeConfig } from "./config";
+import { logger } from "./logger";
 import { randBetween, sleep } from "./random";
 import { getMousePosition, setMousePosition } from "./mouse-path";
+
+const log = logger.child({ module: "idle-mouse" });
 
 /**
  * Perform small idle mouse drift movements as if the user's hand is
@@ -32,6 +35,8 @@ export async function humanIdleMouse(
 	} else {
 		count = Math.round(randBetween(...cfg.browse.idleMovements));
 	}
+
+	log.debug({ movements: count }, "Idle mouse drift");
 
 	const viewport = page.viewportSize() ?? { width: 1920, height: 1080 };
 

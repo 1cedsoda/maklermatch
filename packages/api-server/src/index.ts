@@ -1,14 +1,17 @@
+import { createServer } from "node:http";
 import express from "express";
+import { Server as SocketIOServer } from "socket.io";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import { db } from "./db";
 import { logger } from "./logger";
 import { jwtAuth } from "./middleware/jwt-auth";
-import { secretAuth } from "./middleware/secret-auth";
 import authRoutes from "./routes/auth";
 import listingsRoutes from "./routes/listings";
-import ingestRoutes from "./routes/ingest";
-import triggersRoutes from "./routes/triggers";
+import scrapingTasksRoutes from "./routes/scraping-tasks";
 import scraperProxyRoutes from "./routes/scraper-proxy";
+import questsRoutes from "./routes/quests";
+import { setupScraperSocket } from "./socket/scraper";
+import { startScheduler } from "./services/scheduler";
 
 const log = logger.child({ module: "server" });
 
@@ -26,15 +29,21 @@ app.use("/api/auth", authRoutes);
 
 // JWT-protected user routes
 app.use("/api/listings", jwtAuth, listingsRoutes);
-app.use("/api/triggers", jwtAuth, triggersRoutes);
+app.use("/api/scraping-tasks", jwtAuth, scrapingTasksRoutes);
 app.use("/api/scraper", jwtAuth, scraperProxyRoutes);
-
-// Secret-protected ingestion routes (called by scraping client)
-app.use("/api/ingest", secretAuth, ingestRoutes);
+app.use("/api/quests", jwtAuth, questsRoutes);
 
 // Run migrations on startup
 migrate(db, { migrationsFolder: "./drizzle" });
 
-app.listen(port, () => {
+const server = createServer(app);
+const io = new SocketIOServer(server, {
+	maxHttpBufferSize: 10e6,
+});
+
+setupScraperSocket(io);
+
+server.listen(port, () => {
 	log.info(`API server running on port ${port}`);
+	startScheduler();
 });

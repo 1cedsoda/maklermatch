@@ -1,7 +1,10 @@
-import type { Page } from "patchright";
+import type { Page, Locator } from "patchright";
 import type { DeepPartial, HumanizeConfig } from "./config";
 import { mergeConfig } from "./config";
+import { logger } from "./logger";
 import { randBetween, sleep } from "./random";
+
+const log = logger.child({ module: "scroll" });
 
 /**
  * Scroll the page in a human-like pattern: bursts of small scroll steps
@@ -24,7 +27,7 @@ export async function humanScroll(
 	let totalPixels = pixels;
 	if (totalPixels == null) {
 		const { scrollHeight, clientHeight } = await page.evaluate(() => ({
-			scrollHeight: document.body.scrollHeight,
+			scrollHeight: (document.body ?? document.documentElement).scrollHeight,
 			clientHeight: window.innerHeight,
 		}));
 		const scrollable = Math.max(0, scrollHeight - clientHeight);
@@ -33,6 +36,7 @@ export async function humanScroll(
 	}
 
 	if (totalPixels <= 0) return;
+	log.debug({ pixels: totalPixels }, "Scrolling");
 
 	let scrolled = 0;
 
@@ -79,6 +83,67 @@ export async function humanScroll(
 			Math.random() < cfg.scroll.scrollPauseProbability
 		) {
 			await sleep(randBetween(...cfg.scroll.scrollPauseDuration) * speed);
+		}
+	}
+}
+
+/**
+ * Scroll humanly to bring a specific element into a comfortable viewport
+ * position. Uses humanScroll for downward movement (the common case when
+ * scanning a list top-to-bottom) and small wheel bursts for the rare
+ * upward case.
+ */
+export async function humanScrollToElement(
+	page: Page,
+	locator: Locator,
+	config?: DeepPartial<HumanizeConfig>,
+): Promise<void> {
+	const cfg = mergeConfig(config);
+	const speed = cfg.delays.speedFactor;
+
+	await locator.waitFor({ state: "attached", timeout: 10000 });
+	const box = await locator.boundingBox();
+	if (!box) return;
+
+	const viewportHeight = await page.evaluate(() => window.innerHeight);
+
+	// Element is already comfortably visible in the middle 70% of the viewport
+	if (
+		box.y > viewportHeight * 0.1 &&
+		box.y + box.height < viewportHeight * 0.85
+	) {
+		// Occasional tiny drift scroll for naturalness
+		if (Math.random() < 0.25) {
+			await humanScroll(page, Math.round(randBetween(15, 50)), config);
+		}
+		return;
+	}
+
+	// Target: place the element in the top 30-50% of the viewport
+	const targetY = viewportHeight * randBetween(0.3, 0.5);
+	const elementCenterY = box.y + box.height / 2;
+	const scrollNeeded = elementCenterY - targetY;
+
+	if (scrollNeeded > 10) {
+		// Element is below viewport — scroll down naturally
+		log.debug(
+			{ pixels: Math.round(scrollNeeded) },
+			"Scrolling down to element",
+		);
+		await humanScroll(page, Math.round(scrollNeeded), config);
+	} else if (scrollNeeded < -10) {
+		// Element is above viewport — scroll up with small bursts
+		const upPixels = Math.abs(Math.round(scrollNeeded));
+		log.debug({ pixels: upPixels }, "Scrolling up to element");
+		let scrolled = 0;
+		while (scrolled < upPixels) {
+			const step = Math.min(
+				Math.round(randBetween(...cfg.scroll.scrollStep)),
+				upPixels - scrolled,
+			);
+			await page.mouse.wheel(0, -step);
+			scrolled += step;
+			await sleep(randBetween(...cfg.scroll.scrollStepDelay) * speed);
 		}
 	}
 }

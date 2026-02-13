@@ -7,12 +7,21 @@ import type {
 import type { Result } from "@scraper/scraping-core";
 import { scrapeListingPages } from "./scrape-listing-pages";
 import { extractListings } from "./extract-listings";
+import type { CrawlResult } from "./crawl";
 
 export class KleinanzeigenScraper implements Scraper {
 	readonly source = "kleinanzeigen";
 
-	async scrapePages(options: ScrapeOptions): Promise<Result<string[]>> {
+	async scrapeWithDetails(
+		options: ScrapeOptions,
+	): Promise<Result<CrawlResult>> {
 		return scrapeListingPages(options);
+	}
+
+	async scrapePages(options: ScrapeOptions): Promise<Result<string[]>> {
+		const result = await this.scrapeWithDetails(options);
+		if (!result.ok) return result;
+		return { ok: true, value: result.value.pages };
 	}
 
 	parseListings(htmlPages: string[]): ScrapedListing[] {

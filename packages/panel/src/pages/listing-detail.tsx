@@ -28,7 +28,10 @@ export function ListingDetailPage() {
 	if (error) {
 		return (
 			<div className="space-y-4">
-				<Link to="/listings" className="text-primary hover:underline text-sm">
+				<Link
+					to="/listings"
+					className="text-muted-foreground hover:underline text-sm"
+				>
 					Back to listings
 				</Link>
 				<p className="text-destructive">{error}</p>
@@ -44,7 +47,10 @@ export function ListingDetailPage() {
 
 	return (
 		<div className="space-y-6">
-			<Link to="/listings" className="text-primary hover:underline text-sm">
+			<Link
+				to="/listings"
+				className="text-muted-foreground hover:underline text-sm"
+			>
 				Back to listings
 			</Link>
 

@@ -1,7 +1,7 @@
 export { humanClick } from "./click";
 export { humanFill } from "./fill";
 export { humanDelay } from "./delay";
-export { humanScroll } from "./scroll";
+export { humanScroll, humanScrollToElement } from "./scroll";
 export { humanIdleMouse } from "./idle-mouse";
 export { humanHover } from "./hover";
 export { humanBrowse } from "./browse";

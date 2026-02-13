@@ -9,7 +9,6 @@ services:
       - PORT=3001
       - NODE_ENV=production
       - TZ=Europe/Berlin
-      - SCRAPING_SERVER_URL=http://scraping-server:3002
     volumes:
       - scraper-data:/app/packages/api-server/data
     networks:

@@ -1,0 +1,61 @@
+import type {
+	RegisterPayload,
+	ScrapeStartPayload,
+	ScrapeStartAck,
+	ScrapeResultPayload,
+	ScrapeResultAck,
+	ScrapeErrorPayload,
+	ListingCheckPayload,
+	ListingCheckAck,
+	IngestListingsPayload,
+	IngestListingsAck,
+	ScraperTriggerPayload,
+} from "./lifecycle";
+
+export const SocketEvents = {
+	REGISTER: "register",
+	SCRAPE_START: "scrape:start",
+	SCRAPE_RESULT: "scrape:result",
+	SCRAPE_ERROR: "scrape:error",
+	LISTING_CHECK: "listing:check",
+	INGEST_LISTINGS: "listing:ingest",
+	SCRAPER_STATUS: "scraper:status",
+	SCRAPER_TRIGGER: "scraper:trigger",
+} as const;
+
+export interface ScraperToServerEvents {
+	[SocketEvents.REGISTER]: (
+		data: RegisterPayload,
+		ack: (response: { ok: true }) => void,
+	) => void;
+	[SocketEvents.SCRAPE_START]: (
+		data: ScrapeStartPayload,
+		ack: (response: ScrapeStartAck) => void,
+	) => void;
+	[SocketEvents.SCRAPE_RESULT]: (
+		data: ScrapeResultPayload,
+		ack: (response: ScrapeResultAck) => void,
+	) => void;
+	[SocketEvents.SCRAPE_ERROR]: (
+		data: ScrapeErrorPayload,
+		ack: (response: { ok: true }) => void,
+	) => void;
+	[SocketEvents.LISTING_CHECK]: (
+		data: ListingCheckPayload,
+		ack: (response: ListingCheckAck) => void,
+	) => void;
+	[SocketEvents.INGEST_LISTINGS]: (
+		data: IngestListingsPayload,
+		ack: (response: IngestListingsAck) => void,
+	) => void;
+}
+
+export interface ServerToScraperEvents {
+	[SocketEvents.SCRAPER_STATUS]: (
+		ack: (response: { isRunning: boolean; lastRunAt: string | null }) => void,
+	) => void;
+	[SocketEvents.SCRAPER_TRIGGER]: (
+		data: ScraperTriggerPayload,
+		ack: (response: { ok: true } | { error: string }) => void,
+	) => void;
+}

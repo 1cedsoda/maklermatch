@@ -1,36 +1,92 @@
 import { Router } from "express";
-import { SCRAPER_SECRET, SCRAPER_SECRET_HEADER } from "@scraper/api-types";
+import { SocketEvents } from "@scraper/api-types";
+import {
+	getScraperSocket,
+	getConnectedScrapers,
+	getCurrentScrapingTaskId,
+} from "../socket/scraper";
+import { getQuestById, questToKleinanzeigenSearch } from "../services/quests";
+import { getScrapingTask } from "../services/ingest";
 
 const router = Router();
 
-const SCRAPING_SERVER_URL =
-	process.env.SCRAPING_SERVER_URL || "http://localhost:3002";
-
 router.get("/status", async (_req, res) => {
-	try {
-		const response = await fetch(`${SCRAPING_SERVER_URL}/api/scraper/status`, {
-			headers: { [SCRAPER_SECRET_HEADER]: SCRAPER_SECRET },
+	const socket = getScraperSocket();
+	if (!socket) {
+		res.status(502).json({
+			error: "Scraping server not connected",
+			scrapers: [],
 		});
-		const data = await response.json();
-		res.status(response.status).json(data);
+		return;
+	}
+	try {
+		const scraperStatus = await socket
+			.timeout(5000)
+			.emitWithAck(SocketEvents.SCRAPER_STATUS);
+
+		// Augment with current task info from server state
+		let currentTask: {
+			id: number;
+			questId: number;
+			questName: string;
+			questLocation: string;
+		} | null = null;
+		const taskId = getCurrentScrapingTaskId();
+		if (taskId) {
+			const task = getScrapingTask(taskId);
+			if (task) {
+				const quest = getQuestById(task.questId);
+				if (quest) {
+					currentTask = {
+						id: taskId,
+						questId: quest.id,
+						questName: quest.name,
+						questLocation: quest.location,
+					};
+				}
+			}
+		}
+
+		res.json({
+			...scraperStatus,
+			currentTask,
+			scrapers: getConnectedScrapers(),
+		});
 	} catch {
-		res.status(502).json({ error: "Scraping server unavailable" });
+		res.status(504).json({ error: "Scraping server did not respond" });
 	}
 });
 
-router.post("/trigger", async (_req, res) => {
+router.post("/start", async (req, res) => {
+	const questId = Number(req.body.questId);
+	if (!questId) {
+		res.status(400).json({ error: "questId is required" });
+		return;
+	}
+
+	const quest = getQuestById(questId);
+	if (!quest) {
+		res.status(404).json({ error: "Quest not found" });
+		return;
+	}
+
+	const socket = getScraperSocket();
+	if (!socket) {
+		res.status(502).json({ error: "Scraping server not connected" });
+		return;
+	}
+
 	try {
-		const response = await fetch(`${SCRAPING_SERVER_URL}/api/scraper/trigger`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				[SCRAPER_SECRET_HEADER]: SCRAPER_SECRET,
-			},
-		});
-		const data = await response.json();
-		res.status(response.status).json(data);
+		const result = await socket
+			.timeout(5000)
+			.emitWithAck(SocketEvents.SCRAPER_TRIGGER, {
+				kleinanzeigenSearch: questToKleinanzeigenSearch(quest),
+				questId,
+				maxPages: req.body.maxPages ?? quest.maxPages ?? undefined,
+			});
+		res.json(result);
 	} catch {
-		res.status(502).json({ error: "Scraping server unavailable" });
+		res.status(504).json({ error: "Scraping server did not respond" });
 	}
 });
 

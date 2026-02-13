@@ -1,8 +1,11 @@
 import type { Page, Locator } from "patchright";
 import type { DeepPartial, HumanizeConfig } from "./config";
 import { mergeConfig } from "./config";
+import { logger } from "./logger";
 import { humanClick } from "./click";
 import { randBetween, sleep } from "./random";
+
+const log = logger.child({ module: "fill" });
 
 export async function humanFill(
 	page: Page,
@@ -11,6 +14,7 @@ export async function humanFill(
 	config?: DeepPartial<HumanizeConfig>,
 ): Promise<void> {
 	const cfg = mergeConfig(config);
+	log.debug({ length: text.length }, "Filling input");
 
 	// Click the input field first (human-like)
 	if (cfg.typing.clickBeforeTyping) {

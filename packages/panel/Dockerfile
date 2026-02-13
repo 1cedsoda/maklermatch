@@ -2,8 +2,15 @@ FROM oven/bun:1-debian AS build
 WORKDIR /app
 
 COPY package.json bun.lock ./
+COPY packages/agent/package.json ./packages/agent/
+COPY packages/api-server/package.json ./packages/api-server/
 COPY packages/api-types/package.json ./packages/api-types/
+COPY packages/humanize/package.json ./packages/humanize/
+COPY packages/llm/package.json ./packages/llm/
 COPY packages/panel/package.json ./packages/panel/
+COPY packages/scraping-core/package.json ./packages/scraping-core/
+COPY packages/scraping-kleinanzeigen/package.json ./packages/scraping-kleinanzeigen/
+COPY packages/scraping-server/package.json ./packages/scraping-server/
 
 RUN bun install --frozen-lockfile --ignore-scripts
 

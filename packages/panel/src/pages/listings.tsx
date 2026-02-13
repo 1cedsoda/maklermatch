@@ -50,7 +50,7 @@ export function ListingsPage() {
 							<TableCell>
 								<Link
 									to={`/listings/${listing.id}`}
-									className="text-primary hover:underline"
+									className="text-foreground hover:underline"
 								>
 									{listing.latestVersion?.title ?? listing.id}
 								</Link>

@@ -1,5 +1,8 @@
+import { logger } from "./logger";
 import { randomUserAgent } from "./useragent";
 import { randomViewport } from "./viewport";
+
+const log = logger.child({ module: "identity" });
 
 export interface Proxy {
 	server: string;
@@ -46,6 +49,7 @@ export async function generateIdentity(
 	if (proxies.length === 0) {
 		throw new Error("No proxies provided");
 	}
+	log.info({ proxies: proxies.length }, "Generating browser identity");
 
 	let proxy: Proxy | undefined;
 	const tried = new Set<number>();
@@ -61,10 +65,18 @@ export async function generateIdentity(
 		tried.add(idx);
 
 		const candidate = proxies[idx];
+		log.debug(
+			{ attempt: attempt + 1, server: candidate.server },
+			"Verifying proxy",
+		);
 		if (await verifyProxy(candidate)) {
 			proxy = candidate;
 			break;
 		}
+		log.warn(
+			{ attempt: attempt + 1, server: candidate.server },
+			"Proxy verification failed",
+		);
 	}
 
 	if (!proxy) {
@@ -72,6 +84,7 @@ export async function generateIdentity(
 	}
 
 	const viewport = randomViewport();
+	log.info({ server: proxy.server, viewport }, "Identity generated");
 
 	return {
 		userAgent: randomUserAgent(),

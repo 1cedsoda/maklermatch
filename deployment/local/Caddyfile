@@ -1,0 +1,18 @@
+{
+	auto_https off
+}
+
+:8080 {
+	handle /api/* {
+		reverse_proxy api-server:3001
+	}
+
+	handle {
+		reverse_proxy panel:5173
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

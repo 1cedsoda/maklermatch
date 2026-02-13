@@ -1,57 +1,92 @@
+import type { Socket } from "socket.io-client";
 import {
-	SCRAPER_SECRET,
-	SCRAPER_SECRET_HEADER,
-	type CreateTriggerRequest,
-	type CreateTriggerResponse,
-	type UpdateTriggerRequest,
-	type IngestListingsRequest,
-	type IngestListingsResponse,
+	SocketEvents,
+	type ScrapeStartAck,
+	type ScrapeResultAck,
+	type ListingCheckItem,
+	type ListingCheckAck,
+	type IngestListingsAck,
+	type ServerToScraperEvents,
+	type ScraperToServerEvents,
+	type IngestListing,
 } from "@scraper/api-types";
 
+type TypedSocket = Socket<ServerToScraperEvents, ScraperToServerEvents>;
+
+const RECONNECT_TIMEOUT = 60_000;
+
 export class ApiClient {
-	private baseUrl: string;
+	constructor(private socket: TypedSocket) {}
 
-	constructor(baseUrl: string) {
-		this.baseUrl = baseUrl.replace(/\/$/, "");
-	}
-
-	private async request<T>(
-		method: string,
-		path: string,
-		body?: unknown,
-	): Promise<T> {
-		const res = await fetch(`${this.baseUrl}${path}`, {
-			method,
-			headers: {
-				"Content-Type": "application/json",
-				[SCRAPER_SECRET_HEADER]: SCRAPER_SECRET,
-			},
-			body: body ? JSON.stringify(body) : undefined,
+	private waitForConnection(timeout: number): Promise<void> {
+		if (this.socket.connected) return Promise.resolve();
+		return new Promise((resolve, reject) => {
+			const timer = setTimeout(() => {
+				this.socket.off("connect", onConnect);
+				reject(new Error(`Reconnection timeout after ${timeout}ms`));
+			}, timeout);
+			const onConnect = () => {
+				clearTimeout(timer);
+				resolve();
+			};
+			this.socket.once("connect", onConnect);
 		});
-
-		if (!res.ok) {
-			const text = await res.text();
-			throw new Error(
-				`API request failed: ${method} ${path} → ${res.status} ${text}`,
-			);
-		}
-
-		return res.json() as Promise<T>;
 	}
 
-	async createTrigger(
-		data: CreateTriggerRequest,
-	): Promise<CreateTriggerResponse> {
-		return this.request("POST", "/api/ingest/trigger", data);
+	async scrapeStart(
+		questId: number,
+		opts?: { maxPages?: number },
+	): Promise<ScrapeStartAck> {
+		await this.waitForConnection(RECONNECT_TIMEOUT);
+		return this.socket.timeout(10000).emitWithAck(SocketEvents.SCRAPE_START, {
+			questId,
+			maxPages: opts?.maxPages,
+		});
 	}
 
-	async updateTrigger(id: number, data: UpdateTriggerRequest): Promise<void> {
-		await this.request("PATCH", `/api/ingest/trigger/${id}`, data);
+	async scrapeResult(
+		taskId: number,
+		pagesScraped: number,
+		listingsFound: number,
+		detailsScraped: number,
+		detailsFailed: number,
+		listings: IngestListing[],
+	): Promise<ScrapeResultAck> {
+		await this.waitForConnection(RECONNECT_TIMEOUT);
+		return this.socket.timeout(30000).emitWithAck(SocketEvents.SCRAPE_RESULT, {
+			taskId,
+			pagesScraped,
+			listingsFound,
+			detailsScraped,
+			detailsFailed,
+			listings,
+		});
+	}
+
+	async listingCheck(
+		city: string,
+		listings: ListingCheckItem[],
+	): Promise<ListingCheckAck> {
+		await this.waitForConnection(RECONNECT_TIMEOUT);
+		return this.socket
+			.timeout(30000)
+			.emitWithAck(SocketEvents.LISTING_CHECK, { city, listings });
 	}
 
 	async ingestListings(
-		data: IngestListingsRequest,
-	): Promise<IngestListingsResponse> {
-		return this.request("POST", "/api/ingest/listings", data);
+		city: string,
+		listings: IngestListing[],
+	): Promise<IngestListingsAck> {
+		await this.waitForConnection(RECONNECT_TIMEOUT);
+		return this.socket
+			.timeout(30000)
+			.emitWithAck(SocketEvents.INGEST_LISTINGS, { city, listings });
+	}
+
+	async scrapeError(taskId: number, errorMessage: string): Promise<void> {
+		await this.waitForConnection(RECONNECT_TIMEOUT);
+		await this.socket
+			.timeout(10000)
+			.emitWithAck(SocketEvents.SCRAPE_ERROR, { taskId, errorMessage });
 	}
 }

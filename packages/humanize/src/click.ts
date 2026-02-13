@@ -1,6 +1,7 @@
 import type { Page, Locator } from "patchright";
 import type { DeepPartial, HumanizeConfig } from "./config";
 import { mergeConfig } from "./config";
+import { logger } from "./logger";
 import { randBetween, sleep } from "./random";
 import {
 	getMousePosition,
@@ -8,6 +9,8 @@ import {
 	moveMouseHumanly,
 } from "./mouse-path";
 import { humanHover } from "./hover";
+
+const log = logger.child({ module: "click" });
 
 export async function humanClick(
 	page: Page,
@@ -18,6 +21,7 @@ export async function humanClick(
 
 	// Optionally hover over the element first
 	if (Math.random() < cfg.hover.hoverProbability) {
+		log.debug("Clicking element (with hover)");
 		await humanHover(page, locator, config);
 
 		// Mouse is already on target — just do pre-click delay + click
@@ -47,6 +51,10 @@ export async function humanClick(
 	const jitter = cfg.mouse.targetJitter;
 	const targetX = box.x + box.width * (0.5 + randBetween(-jitter, jitter));
 	const targetY = box.y + box.height * (0.5 + randBetween(-jitter, jitter));
+	log.debug(
+		{ x: Math.round(targetX), y: Math.round(targetY) },
+		"Clicking element",
+	);
 
 	// Move mouse along a Bezier curve to the target
 	const currentPos = getMousePosition(page);

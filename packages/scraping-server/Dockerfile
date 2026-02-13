@@ -7,11 +7,14 @@ WORKDIR /app
 
 # Copy workspace root manifests for dependency resolution
 COPY package.json bun.lock ./
-COPY packages/api/package.json ./packages/api/
+COPY packages/agent/package.json ./packages/agent/
+COPY packages/api-server/package.json ./packages/api-server/
+COPY packages/api-types/package.json ./packages/api-types/
 COPY packages/humanize/package.json ./packages/humanize/
-COPY packages/scraping-kleinanzeigen/package.json ./packages/scraping-kleinanzeigen/
+COPY packages/llm/package.json ./packages/llm/
+COPY packages/panel/package.json ./packages/panel/
 COPY packages/scraping-core/package.json ./packages/scraping-core/
-COPY packages/shared/package.json ./packages/shared/
+COPY packages/scraping-kleinanzeigen/package.json ./packages/scraping-kleinanzeigen/
 COPY packages/scraping-server/package.json ./packages/scraping-server/
 
 # Install all workspace dependencies
@@ -53,11 +56,10 @@ WORKDIR /app
 
 # Copy installed node_modules from install stage
 COPY --from=install /app/node_modules ./node_modules
-COPY --from=install /app/packages/api/node_modules ./packages/api/node_modules
+COPY --from=install /app/packages/api-types/node_modules ./packages/api-types/node_modules
 COPY --from=install /app/packages/humanize/node_modules ./packages/humanize/node_modules
 COPY --from=install /app/packages/scraping-kleinanzeigen/node_modules ./packages/scraping-kleinanzeigen/node_modules
 COPY --from=install /app/packages/scraping-core/node_modules ./packages/scraping-core/node_modules
-COPY --from=install /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY --from=install /app/packages/scraping-server/node_modules ./packages/scraping-server/node_modules
 
 # Copy Chromium browser from install stage
@@ -65,11 +67,10 @@ COPY --from=install /root/.cache/ms-playwright /root/.cache/ms-playwright
 
 # Copy all workspace source files
 COPY package.json bun.lock tsconfig.json ./
-COPY packages/api/ ./packages/api/
+COPY packages/api-types/ ./packages/api-types/
 COPY packages/humanize/ ./packages/humanize/
 COPY packages/scraping-kleinanzeigen/ ./packages/scraping-kleinanzeigen/
 COPY packages/scraping-core/ ./packages/scraping-core/
-COPY packages/shared/ ./packages/shared/
 COPY packages/scraping-server/ ./packages/scraping-server/
 
 # Create data directory for HTML pages

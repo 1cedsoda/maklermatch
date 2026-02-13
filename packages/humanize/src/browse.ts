@@ -1,10 +1,13 @@
 import type { Page } from "patchright";
 import type { DeepPartial, HumanizeConfig } from "./config";
 import { mergeConfig } from "./config";
+import { logger } from "./logger";
 import { randBetween, sleep } from "./random";
 import { humanScroll } from "./scroll";
 import { humanIdleMouse } from "./idle-mouse";
 import { humanTabSwitch } from "./tab-switch";
+
+const log = logger.child({ module: "browse" });
 
 /**
  * Simulate a human browsing/reading a page. Combines variable dwell time,
@@ -20,6 +23,7 @@ export async function humanBrowse(
 	const cfg = mergeConfig(config);
 	const speed = cfg.delays.speedFactor;
 	const dwellTime = randBetween(...cfg.browse.pageDwellTime) * speed;
+	log.debug({ dwellMs: Math.round(dwellTime) }, "Browsing page");
 
 	// Phase 1: Initial pause — user looks at the page before doing anything
 	const initialPause = dwellTime * randBetween(0.1, 0.2);

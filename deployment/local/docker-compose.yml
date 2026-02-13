@@ -1,0 +1,80 @@
+services:
+  api-server:
+    build:
+      context: ../..
+      dockerfile: packages/api-server/Dockerfile
+    container_name: api-server
+    restart: unless-stopped
+    environment:
+      - PORT=3001
+      - NODE_ENV=development
+      - TZ=Europe/Berlin
+    volumes:
+      - ./data:/app/packages/api-server/data
+    networks:
+      - internal
+
+  scraping-server:
+    build:
+      context: ../..
+      dockerfile: packages/scraping-server/Dockerfile
+    container_name: scraping-server
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - TZ=Europe/Berlin
+      - API_SERVER_URL=http://api-server:3001
+    volumes:
+      - scraper-html:/app/packages/scraping-server/data
+      - ./proxies.txt:/app/packages/scraping-server/proxies.txt:ro
+    shm_size: "2gb"
+    networks:
+      - internal
+    depends_on:
+      - api-server
+
+  panel:
+    build:
+      context: ../..
+      dockerfile: deployment/local/Dockerfile.dev.panel
+    container_name: panel
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+      - API_SERVER_URL=http://api-server:3001
+    volumes:
+      - ../../packages/panel/src:/app/packages/panel/src
+      - ../../packages/panel/index.html:/app/packages/panel/index.html
+      - ../../packages/panel/vite.config.ts:/app/packages/panel/vite.config.ts
+      - ../../packages/panel/tsconfig.json:/app/packages/panel/tsconfig.json
+      - ../../packages/api-types/src:/app/packages/api-types/src
+    networks:
+      - internal
+    depends_on:
+      - api-server
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - internal
+    depends_on:
+      - api-server
+      - panel
+
+volumes:
+  scraper-html:
+  caddy-data:
+  caddy-config:
+
+networks:
+  internal:

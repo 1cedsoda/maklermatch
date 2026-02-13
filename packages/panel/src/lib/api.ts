@@ -3,8 +3,23 @@ import type {
 	LoginResponse,
 	ListingsResponse,
 	ListingWithVersions,
-	TriggersResponse,
+	ScrapingTasksResponse,
+	QuestsResponse,
+	SearchQuest,
+	CreateQuestRequest,
+	UpdateQuestRequest,
 } from "@scraper/api-types";
+
+export interface ScraperStatusResponse {
+	isRunning: boolean;
+	lastRunAt: string | null;
+	currentTask: {
+		id: number;
+		questId: number;
+		questName: string;
+		questLocation: string;
+	} | null;
+}
 
 class PanelApiClient {
 	private getToken(): string | null {
@@ -56,21 +71,32 @@ class PanelApiClient {
 		return this.request("GET", `/api/listings/${id}`);
 	}
 
-	getTriggers(city?: string): Promise<TriggersResponse> {
-		const params = city ? `?city=${encodeURIComponent(city)}` : "";
-		return this.request("GET", `/api/triggers${params}`);
+	getScrapingTasks(): Promise<ScrapingTasksResponse> {
+		return this.request("GET", "/api/scraping-tasks");
 	}
 
-	getScraperStatus(): Promise<{
-		quest: { id: number; city: string } | null;
-		isRunning: boolean;
-		lastRunAt: string | null;
-	}> {
+	getScraperStatus(): Promise<ScraperStatusResponse> {
 		return this.request("GET", "/api/scraper/status");
 	}
 
-	triggerScrape(): Promise<{ message: string }> {
-		return this.request("POST", "/api/scraper/trigger");
+	startScrape(questId: number): Promise<{ message: string }> {
+		return this.request("POST", "/api/scraper/start", { questId });
+	}
+
+	getQuests(): Promise<QuestsResponse> {
+		return this.request("GET", "/api/quests");
+	}
+
+	createQuest(data: CreateQuestRequest): Promise<SearchQuest> {
+		return this.request("POST", "/api/quests", data);
+	}
+
+	updateQuest(id: number, data: UpdateQuestRequest): Promise<SearchQuest> {
+		return this.request("PATCH", `/api/quests/${id}`, data);
+	}
+
+	async deleteQuest(id: number): Promise<void> {
+		await this.request("DELETE", `/api/quests/${id}`);
 	}
 }
 

@@ -6,8 +6,9 @@ import { LoginPage } from "@/pages/login";
 import { DashboardPage } from "@/pages/dashboard";
 import { ListingsPage } from "@/pages/listings";
 import { ListingDetailPage } from "@/pages/listing-detail";
-import { TriggersPage } from "@/pages/triggers";
+import { ScrapingTasksPage } from "@/pages/scraping-tasks";
 import { ScraperPage } from "@/pages/scraper";
+import { QuestsPage } from "@/pages/quests";
 
 export function App() {
 	return (
@@ -25,7 +26,8 @@ export function App() {
 						<Route index element={<DashboardPage />} />
 						<Route path="listings" element={<ListingsPage />} />
 						<Route path="listings/:id" element={<ListingDetailPage />} />
-						<Route path="triggers" element={<TriggersPage />} />
+						<Route path="quests" element={<QuestsPage />} />
+						<Route path="scraping-tasks" element={<ScrapingTasksPage />} />
 						<Route path="scraper" element={<ScraperPage />} />
 					</Route>
 					<Route path="*" element={<Navigate to="/" replace />} />

@@ -1,7 +1,10 @@
 import type { Page } from "patchright";
 import type { DeepPartial, HumanizeConfig } from "./config";
 import { mergeConfig } from "./config";
+import { logger } from "./logger";
 import { randBetween, sleep } from "./random";
+
+const log = logger.child({ module: "tab-switch" });
 
 /**
  * Simulate the user switching to another browser tab and coming back.
@@ -17,6 +20,7 @@ export async function humanTabSwitch(
 	const cfg = mergeConfig(config);
 
 	if (Math.random() > cfg.tabSwitch.probability) return;
+	log.debug("Simulating tab switch");
 
 	// Simulate leaving the tab
 	await page.evaluate(() => {

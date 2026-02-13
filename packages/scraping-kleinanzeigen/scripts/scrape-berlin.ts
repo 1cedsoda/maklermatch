@@ -1,34 +1,171 @@
 import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
-import { Window } from "happy-dom";
 import { generateIdentity, loadProxies } from "@scraper/humanize";
+import type { ScrapedListing } from "@scraper/scraping-core";
 import {
-	scrapeListingPages,
-	extractListings,
-	type KleinanzeigenListing,
+	launchBrowser,
+	searchViaStartpage,
+	dismissCookieBanner,
+	navigateToCategory,
+	setLocation,
+	waitForListings,
+	scrapeIncrementally,
+	type ScrapeHandler,
 } from "../src";
 
-const HTML_DIR = join(import.meta.dir, "..", "html");
+const CITY = "Berlin";
+const MAX_PAGES = 2;
 
-function saveHtmlPages(pages: string[], timestamp: string) {
-	mkdirSync(HTML_DIR, { recursive: true });
-	for (let i = 0; i < pages.length; i++) {
-		const filename = `listings-p${i + 1}-${timestamp}.html`;
-		writeFileSync(join(HTML_DIR, filename), pages[i], "utf-8");
-		console.log(`Saved: ${filename}`);
-	}
+interface ListingRow {
+	id: string;
+	city: string;
+	url: string;
+	firstSeen: string;
+	lastSeen: string;
+	detailPageScrapedAt: string | null;
 }
 
-function parseListings(pages: string[]): KleinanzeigenListing[] {
-	const all: KleinanzeigenListing[] = [];
-	for (const html of pages) {
-		const window = new Window();
-		window.document.body.innerHTML = html;
-		const doc = window.document as unknown as Document;
-		all.push(...extractListings(doc));
-		window.close();
+interface AbstractSnapshotRow {
+	listingId: string;
+	title: string;
+	description: string;
+	price: string | null;
+	priceParsed: number | null;
+	location: string | null;
+	distance: string | null;
+	date: string | null;
+	imageUrl: string | null;
+	imageCount: number;
+	isPrivate: boolean;
+	tags: string[];
+	seenAt: string;
+}
+
+interface DetailSnapshotRow {
+	listingId: string;
+	description: string;
+	category: string | null;
+	imageUrls: string[];
+	details: Record<string, string>;
+	features: string[];
+	latitude: number | null;
+	longitude: number | null;
+	viewCount: number | null;
+	sellerId: string | null;
+	seenAt: string;
+}
+
+interface SellerRow {
+	externalId: string;
+	name: string | null;
+	type: "private" | "commercial" | null;
+	activeSince: string | null;
+	otherAdsCount: number | null;
+	seenAt: string;
+}
+
+function createFileHandler(city: string) {
+	const listingMap = new Map<string, ScrapedListing>();
+	const listings: ListingRow[] = [];
+	const abstractSnapshots: AbstractSnapshotRow[] = [];
+	const detailSnapshots: DetailSnapshotRow[] = [];
+	const sellers: SellerRow[] = [];
+	const seenListingIds = new Set<string>();
+
+	const handler: ScrapeHandler = {
+		onListingsDiscovered: async (scraped) => {
+			const now = new Date().toISOString();
+
+			for (const l of scraped) {
+				listingMap.set(l.sourceId, l);
+
+				if (!seenListingIds.has(l.sourceId)) {
+					seenListingIds.add(l.sourceId);
+					listings.push({
+						id: l.sourceId,
+						city,
+						url: l.sourceUrl,
+						firstSeen: now,
+						lastSeen: now,
+						detailPageScrapedAt: null,
+					});
+				}
+
+				abstractSnapshots.push({
+					listingId: l.sourceId,
+					title: l.title,
+					description: l.description,
+					price: l.price,
+					priceParsed: l.priceParsed,
+					location: l.location,
+					distance: (l.extra?.distance as string) ?? null,
+					date: l.date,
+					imageUrl: l.imageUrl,
+					imageCount: l.imageCount,
+					isPrivate: l.isPrivate,
+					tags: l.tags,
+					seenAt: now,
+				});
+			}
+
+			// Request detail visits for all listings
+			return { detailNeeded: scraped.map((l) => l.sourceId) };
+		},
+
+		onDetailScraped: async (detail) => {
+			const now = new Date().toISOString();
+
+			// Update detailPageScrapedAt on the listing row
+			const listingRow = listings.find((l) => l.id === detail.id);
+			if (listingRow) {
+				listingRow.detailPageScrapedAt = now;
+			}
+
+			detailSnapshots.push({
+				listingId: detail.id,
+				description: detail.description,
+				category: detail.category,
+				imageUrls: detail.imageUrls,
+				details: detail.details,
+				features: detail.features,
+				latitude: detail.latitude,
+				longitude: detail.longitude,
+				viewCount: detail.viewCount,
+				sellerId: detail.seller.userId,
+				seenAt: now,
+			});
+
+			if (detail.seller.userId) {
+				sellers.push({
+					externalId: detail.seller.userId,
+					name: detail.seller.name,
+					type: detail.seller.type,
+					activeSince: detail.seller.activeSince,
+					otherAdsCount: detail.seller.otherAdsCount,
+					seenAt: now,
+				});
+			}
+		},
+	};
+
+	function writeResults(outputDir: string) {
+		mkdirSync(outputDir, { recursive: true });
+
+		const files = {
+			"listings.json": listings,
+			"listing_abstract_snapshots.json": abstractSnapshots,
+			"listing_detail_snapshots.json": detailSnapshots,
+			"sellers.json": sellers,
+		};
+
+		for (const [filename, data] of Object.entries(files)) {
+			const path = join(outputDir, filename);
+			writeFileSync(path, JSON.stringify(data, null, 2), "utf-8");
+			console.log(`Saved: ${filename} (${(data as unknown[]).length} rows)`);
+		}
 	}
-	return all;
+
+	return { handler, writeResults };
 }
 
 async function main() {
@@ -40,33 +177,34 @@ async function main() {
 		"proxies.txt",
 	);
 	const identity = await generateIdentity(loadProxies(proxiesPath));
-	const result = await scrapeListingPages({
-		location: "Berlin",
-		maxPages: 2,
-		headless: false,
-		identity,
-	});
+	const { browser, page } = await launchBrowser(identity, { headless: false });
 
-	if (!result.ok) {
-		console.error(result.error.message);
-		process.exit(1);
-	}
-
-	const htmlPages = result.value;
 	const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-	saveHtmlPages(htmlPages, timestamp);
+	const outputDir = join(import.meta.dir, "..", "output", timestamp);
 
-	const listings = parseListings(htmlPages);
-	const jsonFilename = `listings-${timestamp}.json`;
-	writeFileSync(
-		join(HTML_DIR, jsonFilename),
-		JSON.stringify(listings, null, 2),
-		"utf-8",
-	);
-	console.log(`Saved: ${jsonFilename}`);
-	console.log(
-		`\nExtracted ${listings.length} listings from ${htmlPages.length} pages`,
-	);
+	try {
+		// Navigation
+		const kleinanzeigenPage = await searchViaStartpage(page);
+		await dismissCookieBanner(kleinanzeigenPage);
+		await navigateToCategory(kleinanzeigenPage);
+		await setLocation(kleinanzeigenPage, CITY);
+		await waitForListings(kleinanzeigenPage);
+
+		// Scrape with file handler
+		const { handler, writeResults } = createFileHandler(CITY);
+		const result = await scrapeIncrementally(kleinanzeigenPage, handler, {
+			maxPages: MAX_PAGES,
+		});
+
+		// Write output
+		writeResults(outputDir);
+		console.log(
+			`\nScrape complete: ${result.pagesScraped} pages, ${result.listingsFound} listings, ${result.detailsScraped} details`,
+		);
+		console.log(`Output: ${outputDir}`);
+	} finally {
+		await browser.close();
+	}
 }
 
 main().catch(console.error);
