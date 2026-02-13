@@ -17,6 +17,9 @@ export const scrapingTasks = sqliteTable("scraping_tasks", {
 	detailsScraped: integer("details_scraped"),
 	detailsFailed: integer("details_failed"),
 	errorMessage: text("error_message"),
+	errorLogs: text("error_logs", { mode: "json" }).$type<
+		{ line: string; ts: number }[]
+	>(),
 });
 
 export const searchQuests = sqliteTable("search_quests", {

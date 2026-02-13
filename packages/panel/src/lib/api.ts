@@ -4,6 +4,7 @@ import type {
 	ListingsResponse,
 	ListingWithVersions,
 	ScrapingTasksResponse,
+	ScrapingTaskDetailResponse,
 	QuestsResponse,
 	SearchQuest,
 	CreateQuestRequest,
@@ -132,6 +133,16 @@ class PanelApiClient {
 
 	async deleteQuest(id: number): Promise<void> {
 		await this.request("DELETE", `/api/quests/${id}`);
+	}
+
+	getScrapingTask(id: number): Promise<ScrapingTaskDetailResponse> {
+		return this.request("GET", `/api/scraping-tasks/${id}`);
+	}
+
+	getScraperLogs(
+		scraperId: string,
+	): Promise<{ scraperId: string; lines: { line: string; ts: number }[] }> {
+		return this.request("GET", `/api/scraper/logs?scraperId=${scraperId}`);
 	}
 
 	getSellers(page = 1, limit = 20): Promise<SellersResponse> {

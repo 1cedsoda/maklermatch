@@ -12,6 +12,7 @@
 		"@ai-sdk/react": "^3.0.87",
 		"@scraper/api-types": "workspace:*",
 		"ai": "^6.0.85",
+		"ansi-to-html": "^0.7.2",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"lucide-react": "^0.563.0",

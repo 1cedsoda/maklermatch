@@ -38,7 +38,14 @@ export function ScrapingTasksPage() {
 				<TableBody>
 					{tasks.map((t) => (
 						<TableRow key={t.id}>
-							<TableCell>{t.id}</TableCell>
+							<TableCell>
+								<Link
+									to={`/scraping-tasks/${t.id}`}
+									className="text-primary underline-offset-4 hover:underline"
+								>
+									#{t.id}
+								</Link>
+							</TableCell>
 							<TableCell>
 								<Link
 									to="/quests"

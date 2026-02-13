@@ -23,6 +23,7 @@ export const sellerSchema = z.object({
 
 export const sellerWithLatestSnapshotSchema = sellerSchema.extend({
 	latestSnapshot: sellerSnapshotSchema.nullable(),
+	scrapedAdsCount: z.number(),
 });
 
 // ─── Listing Abstract Version ────────────────────────────────

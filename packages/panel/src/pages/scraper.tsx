@@ -132,7 +132,7 @@ export function ScraperPage() {
 											</span>
 										</div>
 										<Link
-											to="/scraping-tasks"
+											to={`/scraping-tasks/${status.currentTask.id}`}
 											className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
 										>
 											<Cpu className="h-3 w-3" />

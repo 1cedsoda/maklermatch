@@ -146,7 +146,17 @@ export function extractListingDetail(
 		sellerNameRaw && !/^privat$/i.test(sellerNameRaw) ? sellerNameRaw : null;
 	const sellerHref = sellerNameLink?.getAttribute("href") || "";
 	const userIdMatch = sellerHref.match(/userId=(\d+)/);
-	const userId = userIdMatch ? userIdMatch[1] : null;
+	let userId = userIdMatch ? userIdMatch[1] : null;
+
+	// Commercial sellers (bizteaser) use /pro/<slug> instead of ?userId=
+	if (!userId) {
+		const bizteaserLink = doc.querySelector(".bizteaser--logo");
+		const proHref = bizteaserLink?.getAttribute("href") || "";
+		const proMatch = proHref.match(/\/pro\/(.+)/);
+		if (proMatch) {
+			userId = `pro:${proMatch[1]}`;
+		}
+	}
 
 	const sellerTypeEl = contactEl?.querySelector(
 		".userprofile-vip-details-text",
@@ -334,7 +344,17 @@ export async function scrapeListingDetail(
 			sellerNameRaw && !/^privat$/i.test(sellerNameRaw) ? sellerNameRaw : null;
 		const sellerHref = sellerNameLink?.getAttribute("href") || "";
 		const userIdMatch = sellerHref.match(/userId=(\d+)/);
-		const userId = userIdMatch ? userIdMatch[1] : null;
+		let userId = userIdMatch ? userIdMatch[1] : null;
+
+		// Commercial sellers (bizteaser) use /pro/<slug> instead of ?userId=
+		if (!userId) {
+			const bizteaserLink = document.querySelector(".bizteaser--logo");
+			const proHref = bizteaserLink?.getAttribute("href") || "";
+			const proMatch = proHref.match(/\/pro\/(.+)/);
+			if (proMatch) {
+				userId = `pro:${proMatch[1]}`;
+			}
+		}
 
 		const sellerTypeEl = contactEl?.querySelector(
 			".userprofile-vip-details-text",

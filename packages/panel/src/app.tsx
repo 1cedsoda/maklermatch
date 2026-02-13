@@ -7,6 +7,7 @@ import { DashboardPage } from "@/pages/dashboard";
 import { ListingsPage } from "@/pages/listings";
 import { ListingDetailPage } from "@/pages/listing-detail";
 import { ScrapingTasksPage } from "@/pages/scraping-tasks";
+import { ScrapingTaskDetailPage } from "@/pages/scraping-task-detail";
 import { ScraperPage } from "@/pages/scraper";
 import { QuestsPage } from "@/pages/quests";
 import { QuestDetailPage } from "@/pages/quest-detail";
@@ -36,6 +37,10 @@ export function App() {
 						<Route path="quests" element={<QuestsPage />} />
 						<Route path="quests/:id" element={<QuestDetailPage />} />
 						<Route path="scraping-tasks" element={<ScrapingTasksPage />} />
+						<Route
+							path="scraping-tasks/:id"
+							element={<ScrapingTaskDetailPage />}
+						/>
 						<Route path="scraper" element={<ScraperPage />} />
 					</Route>
 					<Route path="*" element={<Navigate to="/" replace />} />

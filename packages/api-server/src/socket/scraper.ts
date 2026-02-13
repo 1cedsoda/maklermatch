@@ -20,7 +20,7 @@ import {
 	checkListings,
 	markRemovedListings,
 } from "../services/ingest";
-import { pushLogLine } from "../services/log-buffer";
+import { pushLogLine, getLogLines } from "../services/log-buffer";
 import { getQuestById } from "../services/quests";
 import { logger } from "../logger";
 import { generateScraperName, releaseScraperName } from "../lib/scraper-names";
@@ -200,9 +200,11 @@ export function setupScraperSocket(server: SocketIOServer) {
 			if (!parsed.success) {
 				return;
 			}
+			const errorLogs = getLogLines(socket.id);
 			updateScrapingTask(parsed.data.taskId, {
 				status: "error",
 				errorMessage: parsed.data.errorMessage,
+				errorLogs,
 			});
 			currentScrapingTaskId = null;
 			ack({ ok: true });

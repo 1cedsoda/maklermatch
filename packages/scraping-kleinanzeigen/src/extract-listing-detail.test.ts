@@ -39,6 +39,15 @@ const FIXTURE_COMMERCIAL_BIZTEASER_VONPOLL = readFileSync(
 	"utf-8",
 );
 
+const FIXTURE_COMMERCIAL_BIZTEASER_VONPOLL_TEMPELHOF = readFileSync(
+	join(
+		import.meta.dir,
+		"fixtures",
+		"commercial-seller-bizteaser-vonpoll-tempelhof.html",
+	),
+	"utf-8",
+);
+
 function parseHTML(html: string): Document {
 	const window = new Window();
 	window.document.write(html);
@@ -207,8 +216,8 @@ describe("extractListingDetail – commercial seller (bizteaser, no userId link)
 		);
 	});
 
-	test("returns null userId when no userId query param in links", () => {
-		expect(detail.seller.userId).toBeNull();
+	test("extracts userId from bizteaser pro slug", () => {
+		expect(detail.seller.userId).toBe("pro:ak-immobilien-service-gmbh");
 	});
 
 	test("extracts seller type as commercial", () => {
@@ -257,8 +266,8 @@ describe("extractListingDetail – commercial seller (bizteaser with phone, mass
 		expect(detail.seller.name).toBe("massa haus - Norma Fitzlaff");
 	});
 
-	test("returns null userId when no userId query param", () => {
-		expect(detail.seller.userId).toBeNull();
+	test("extracts userId from bizteaser pro slug", () => {
+		expect(detail.seller.userId).toBe("pro:Norma-Fitzlaff-massahaus");
 	});
 
 	test("extracts seller type as commercial", () => {
@@ -284,8 +293,8 @@ describe("extractListingDetail – commercial seller (bizteaser with phone, VON 
 		);
 	});
 
-	test("returns null userId when no userId query param", () => {
-		expect(detail.seller.userId).toBeNull();
+	test("extracts userId from bizteaser pro slug", () => {
+		expect(detail.seller.userId).toBe("pro:VON-POLL-IMMOBILIEN-Berlin-Pankow");
 	});
 
 	test("extracts seller type as commercial", () => {
@@ -298,6 +307,33 @@ describe("extractListingDetail – commercial seller (bizteaser with phone, VON 
 
 	test("extracts other ads count from bizteaser numads", () => {
 		expect(detail.seller.otherAdsCount).toBe(24);
+	});
+});
+
+describe("extractListingDetail – commercial seller (bizteaser VON POLL Tempelhof)", () => {
+	const doc = parseHTML(FIXTURE_COMMERCIAL_BIZTEASER_VONPOLL_TEMPELHOF);
+	const detail = extractListingDetail(doc);
+
+	test("extracts seller name from span", () => {
+		expect(detail.seller.name).toBe("Berlin - Tempelhof - Ayten Held");
+	});
+
+	test("extracts userId from bizteaser pro slug", () => {
+		expect(detail.seller.userId).toBe(
+			"pro:von-poll-immobilien-berlin-tempelhof",
+		);
+	});
+
+	test("extracts seller type as commercial", () => {
+		expect(detail.seller.type).toBe("commercial");
+	});
+
+	test("extracts seller active since date", () => {
+		expect(detail.seller.activeSince).toBe("14.02.2024");
+	});
+
+	test("extracts other ads count from bizteaser numads", () => {
+		expect(detail.seller.otherAdsCount).toBe(13);
 	});
 });
 

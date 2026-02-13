@@ -35,7 +35,18 @@ router.get("/", (req, res) => {
 			.limit(1)
 			.get();
 
-		return { ...seller, latestSnapshot: latestSnapshot ?? null };
+		const scrapedAdsCount = db
+			.select({ count: count() })
+			.from(listingDetailSnapshots)
+			.where(eq(listingDetailSnapshots.sellerId, seller.id))
+			.groupBy(listingDetailSnapshots.listingId)
+			.all().length;
+
+		return {
+			...seller,
+			latestSnapshot: latestSnapshot ?? null,
+			scrapedAdsCount,
+		};
 	});
 
 	res.json({ sellers: sellersWithSnapshots, total, page, limit });

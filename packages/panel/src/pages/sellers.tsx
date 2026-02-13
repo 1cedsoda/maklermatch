@@ -43,6 +43,7 @@ export function SellersPage() {
 						<TableHead>Type</TableHead>
 						<TableHead>Active Since</TableHead>
 						<TableHead>Other Ads</TableHead>
+						<TableHead>Scraped Other Ads</TableHead>
 						<TableHead>Last Seen</TableHead>
 					</TableRow>
 				</TableHeader>
@@ -68,6 +69,7 @@ export function SellersPage() {
 							<TableCell>
 								{seller.latestSnapshot?.otherAdsCount ?? "-"}
 							</TableCell>
+							<TableCell>{seller.scrapedAdsCount}</TableCell>
 							<TableCell>
 								{new Date(seller.lastSeen).toLocaleString()}
 							</TableCell>

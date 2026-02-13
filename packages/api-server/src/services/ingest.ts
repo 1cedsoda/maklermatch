@@ -262,6 +262,7 @@ export function updateScrapingTask(
 		detailsScraped?: number;
 		detailsFailed?: number;
 		errorMessage?: string;
+		errorLogs?: { line: string; ts: number }[];
 	},
 ): void {
 	db.update(scrapingTasks).set(data).where(eq(scrapingTasks.id, id)).run();

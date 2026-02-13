@@ -152,33 +152,10 @@ export async function setLocation(page: Page, location: string) {
 	log.info("Searchbox visible, filling...");
 
 	await humanFill(page, searchbox, location);
-	log.info("Text entered, waiting for autocomplete options...");
-
-	const firstOption = page.getByRole("option").first();
-	await firstOption.waitFor({ state: "visible", timeout: 20000 });
-	log.info("Autocomplete option visible, waiting for it to stabilize...");
-
-	// Wait for the dropdown to settle — options can re-render as results arrive
-	await humanDelay(page, 800);
-
-	// Find the option that matches the desired location, not just the first one
-	const options = page.getByRole("option");
-	const count = await options.count();
-	let matched = firstOption;
-	for (let i = 0; i < count; i++) {
-		const text = await options.nth(i).textContent();
-		if (text?.trim().toLowerCase().startsWith(location.toLowerCase())) {
-			matched = options.nth(i);
-			log.info(
-				{ matched: text?.trim(), index: i },
-				"Found matching autocomplete option",
-			);
-			break;
-		}
-	}
-
-	log.info("Clicking autocomplete option...");
-	await humanClick(page, matched);
+	log.info("Text entered, pressing Enter...");
+	await humanDelay(page, 300);
+	await page.keyboard.press("Enter");
+	await page.waitForLoadState("domcontentloaded");
 	log.info({ url: page.url() }, "Location set");
 }
 

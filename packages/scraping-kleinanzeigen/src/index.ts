@@ -22,6 +22,7 @@ export {
 	type KleinanzeigenListingDetail,
 	type SellerInfo,
 } from "./extract-listing-detail";
+export { setLogLineHandler } from "./logger";
 export {
 	searchViaStartpage,
 	dismissCookieBanner,

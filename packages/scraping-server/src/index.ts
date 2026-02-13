@@ -1,9 +1,9 @@
 import { io } from "socket.io-client";
 import { SCRAPER_SECRET, SocketEvents } from "@scraper/api-types";
+import { setLogLineHandler as setKleinanzeigenLogHandler } from "@scraper/scraping-kleinanzeigen";
 import { ApiClient } from "./api-client";
 import { setupScraperHandlers } from "./socket-handlers";
-import { tapStdout } from "./stdout-tap";
-import { logger } from "./logger";
+import { logger, setLogLineHandler } from "./logger";
 
 const log = logger.child({ module: "main" });
 
@@ -16,7 +16,11 @@ const socket = io(API_SERVER_URL, {
 	reconnectionDelayMax: 30000,
 });
 
-tapStdout(socket);
+const emitLogLine = (line: string, ts: number) => {
+	socket.volatile.emit(SocketEvents.LOG_LINE, { line, ts });
+};
+setLogLineHandler(emitLogLine);
+setKleinanzeigenLogHandler(emitLogLine);
 
 const apiClient = new ApiClient(socket);
 

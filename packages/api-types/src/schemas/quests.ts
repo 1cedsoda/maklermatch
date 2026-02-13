@@ -52,6 +52,13 @@ export type QuestsResponse = z.infer<typeof questsResponseSchema>;
 
 // ─── Scraping Tasks ─────────────────────────────────────────
 
+export const logEntrySchema = z.object({
+	line: z.string(),
+	ts: z.number(),
+});
+
+export type LogEntry = z.infer<typeof logEntrySchema>;
+
 export const scrapingTaskSchema = z.object({
 	id: z.number(),
 	questId: z.number(),
@@ -63,6 +70,7 @@ export const scrapingTaskSchema = z.object({
 	detailsScraped: z.number().nullable(),
 	detailsFailed: z.number().nullable(),
 	errorMessage: z.string().nullable(),
+	errorLogs: z.array(logEntrySchema).nullable().optional(),
 	questName: z.string(),
 	questLocation: z.string(),
 });
@@ -73,6 +81,15 @@ export const scrapingTasksResponseSchema = z.object({
 
 export type ScrapingTask = z.infer<typeof scrapingTaskSchema>;
 export type ScrapingTasksResponse = z.infer<typeof scrapingTasksResponseSchema>;
+
+export const scrapingTaskDetailResponseSchema = z.object({
+	task: scrapingTaskSchema,
+	scraperId: z.string().nullable(),
+});
+
+export type ScrapingTaskDetailResponse = z.infer<
+	typeof scrapingTaskDetailResponseSchema
+>;
 
 // ─── Scheduler Status ────────────────────────────────────────
 
