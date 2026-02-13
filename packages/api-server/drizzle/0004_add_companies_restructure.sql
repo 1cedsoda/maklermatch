@@ -58,3 +58,17 @@ DROP TABLE `brokers`;
 --> statement-breakpoint
 
 ALTER TABLE `brokers_new` RENAME TO `brokers`;
+--> statement-breakpoint
+
+-- Add date_parsed column to listing_abstract_snapshots
+ALTER TABLE `listing_abstract_snapshots` ADD `date_parsed` text;
+--> statement-breakpoint
+
+-- Add sorting column to search_targets
+ALTER TABLE `search_targets` ADD `sorting` text;
+--> statement-breakpoint
+
+-- Add broker_email and kleinanzeigen_conversation_id to conversations
+ALTER TABLE `conversations` ADD `broker_email` text NOT NULL DEFAULT '';
+--> statement-breakpoint
+ALTER TABLE `conversations` ADD `kleinanzeigen_conversation_id` text;
