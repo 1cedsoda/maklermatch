@@ -7,5 +7,7 @@ html/
 deployment/local/data/*
 !deployment/local/data/.gitkeep
 !deployment/local/data/scraper.db
+*.db-shm
+*.db-wal
 output/
 proxies.txt
