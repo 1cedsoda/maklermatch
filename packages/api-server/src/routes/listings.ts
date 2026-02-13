@@ -45,7 +45,23 @@ router.get("/", (req, res) => {
 			.limit(1)
 			.get();
 
-		return { ...listing, latestVersion: latestVersion ?? null };
+		const latestDetail = db
+			.select({
+				sellerId: listingDetailSnapshots.sellerId,
+				sellerName: listingDetailSnapshots.sellerName,
+			})
+			.from(listingDetailSnapshots)
+			.where(eq(listingDetailSnapshots.listingId, listing.id))
+			.orderBy(desc(listingDetailSnapshots.id))
+			.limit(1)
+			.get();
+
+		return {
+			...listing,
+			latestVersion: latestVersion ?? null,
+			sellerId: latestDetail?.sellerId ?? null,
+			sellerName: latestDetail?.sellerName ?? null,
+		};
 	});
 
 	res.json({ listings: listingsWithVersions, total, page, limit });

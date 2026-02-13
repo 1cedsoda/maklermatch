@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Table,
@@ -10,18 +11,18 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import type { ListingWithLatestVersion } from "@scraper/api-types";
+import type { SellerWithLatestSnapshot } from "@scraper/api-types";
 
-export function ListingsPage() {
+export function SellersPage() {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const page = Number(searchParams.get("page")) || 1;
-	const [listings, setListings] = useState<ListingWithLatestVersion[]>([]);
+	const [sellers, setSellers] = useState<SellerWithLatestSnapshot[]>([]);
 	const [total, setTotal] = useState(0);
 	const limit = 20;
 
 	useEffect(() => {
-		api.getListings(page, limit).then((res) => {
-			setListings(res.listings);
+		api.getSellers(page, limit).then((res) => {
+			setSellers(res.sellers);
 			setTotal(res.total);
 		});
 	}, [page]);
@@ -31,47 +32,44 @@ export function ListingsPage() {
 	return (
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
-				<h2 className="text-2xl font-bold">Listings</h2>
+				<h2 className="text-2xl font-bold">Sellers</h2>
 				<p className="text-sm text-muted-foreground">{total} total</p>
 			</div>
 
 			<Table>
 				<TableHeader>
 					<TableRow>
-						<TableHead>Title</TableHead>
-						<TableHead>Price</TableHead>
-						<TableHead>Location</TableHead>
-						<TableHead>Seller</TableHead>
+						<TableHead>Name</TableHead>
+						<TableHead>Type</TableHead>
+						<TableHead>Active Since</TableHead>
+						<TableHead>Other Ads</TableHead>
 						<TableHead>Last Seen</TableHead>
 					</TableRow>
 				</TableHeader>
 				<TableBody>
-					{listings.map((listing) => (
-						<TableRow key={listing.id}>
+					{sellers.map((seller) => (
+						<TableRow key={seller.id}>
 							<TableCell>
 								<Link
-									to={`/listings/${listing.id}`}
-									className="text-foreground hover:underline"
+									to={`/sellers/${seller.id}`}
+									className="text-primary hover:underline"
 								>
-									{listing.latestVersion?.title ?? listing.id}
+									{seller.latestSnapshot?.name ?? seller.externalId}
 								</Link>
 							</TableCell>
-							<TableCell>{listing.latestVersion?.price ?? "-"}</TableCell>
-							<TableCell>{listing.latestVersion?.location ?? "-"}</TableCell>
 							<TableCell>
-								{listing.sellerId ? (
-									<Link
-										to={`/sellers/${listing.sellerId}`}
-										className="text-primary hover:underline"
-									>
-										{listing.sellerName ?? "-"}
-									</Link>
+								{seller.latestSnapshot?.type ? (
+									<Badge variant="outline">{seller.latestSnapshot.type}</Badge>
 								) : (
 									"-"
 								)}
 							</TableCell>
+							<TableCell>{seller.latestSnapshot?.activeSince ?? "-"}</TableCell>
 							<TableCell>
-								{new Date(listing.lastSeen).toLocaleString()}
+								{seller.latestSnapshot?.otherAdsCount ?? "-"}
+							</TableCell>
+							<TableCell>
+								{new Date(seller.lastSeen).toLocaleString()}
 							</TableCell>
 						</TableRow>
 					))}

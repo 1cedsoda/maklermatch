@@ -110,6 +110,15 @@ export const ingestListingsAckSchema = z.object({
 
 export type IngestListingsAck = z.infer<typeof ingestListingsAckSchema>;
 
+// ─── Log Streaming ───────────────────────────────────────────
+
+export const logLinePayloadSchema = z.object({
+	line: z.string(),
+	ts: z.number(),
+});
+
+export type LogLinePayload = z.infer<typeof logLinePayloadSchema>;
+
 // ─── Server → Scraper ─────────────────────────────────────────
 
 export const hausZumKaufSearchSchema = z.object({

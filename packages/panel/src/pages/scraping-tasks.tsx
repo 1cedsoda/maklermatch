@@ -27,7 +27,7 @@ export function ScrapingTasksPage() {
 				<TableHeader>
 					<TableRow>
 						<TableHead>ID</TableHead>
-						<TableHead>Quest</TableHead>
+						<TableHead>Scraping Quest</TableHead>
 						<TableHead>Started At</TableHead>
 						<TableHead>Status</TableHead>
 						<TableHead>Pages</TableHead>

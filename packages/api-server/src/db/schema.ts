@@ -78,6 +78,9 @@ export const listingAbstractSnapshots = sqliteTable(
 		seenAt: text("seen_at")
 			.notNull()
 			.$defaultFn(() => new Date().toISOString()),
+		scrapingTaskId: integer("scraping_task_id").references(
+			() => scrapingTasks.id,
+		),
 	},
 );
 
@@ -105,6 +108,9 @@ export const sellerSnapshots = sqliteTable("seller_snapshots", {
 	seenAt: text("seen_at")
 		.notNull()
 		.$defaultFn(() => new Date().toISOString()),
+	scrapingTaskId: integer("scraping_task_id").references(
+		() => scrapingTasks.id,
+	),
 });
 
 export const listingDetailSnapshots = sqliteTable("listing_detail_snapshots", {
@@ -129,4 +135,7 @@ export const listingDetailSnapshots = sqliteTable("listing_detail_snapshots", {
 	seenAt: text("seen_at")
 		.notNull()
 		.$defaultFn(() => new Date().toISOString()),
+	scrapingTaskId: integer("scraping_task_id").references(
+		() => scrapingTasks.id,
+	),
 });

@@ -8,6 +8,9 @@ import type {
 	SearchQuest,
 	CreateQuestRequest,
 	UpdateQuestRequest,
+	SchedulerStatusResponse,
+	SellersResponse,
+	SellerWithSnapshots,
 } from "@scraper/api-types";
 
 export interface ScraperStatusResponse {
@@ -71,8 +74,19 @@ class PanelApiClient {
 		return this.request("GET", `/api/listings/${id}`);
 	}
 
-	getScrapingTasks(): Promise<ScrapingTasksResponse> {
-		return this.request("GET", "/api/scraping-tasks");
+	getScrapingTasks(opts?: {
+		questId?: number;
+		limit?: number;
+	}): Promise<ScrapingTasksResponse> {
+		const params = new URLSearchParams();
+		if (opts?.questId) params.set("questId", String(opts.questId));
+		if (opts?.limit) params.set("limit", String(opts.limit));
+		const qs = params.toString();
+		return this.request("GET", `/api/scraping-tasks${qs ? `?${qs}` : ""}`);
+	}
+
+	getSchedulerStatus(): Promise<SchedulerStatusResponse> {
+		return this.request("GET", "/api/quests/scheduler-status");
 	}
 
 	getScraperStatus(): Promise<ScraperStatusResponse> {
@@ -87,6 +101,10 @@ class PanelApiClient {
 		return this.request("GET", "/api/quests");
 	}
 
+	getQuest(id: number): Promise<SearchQuest> {
+		return this.request("GET", `/api/quests/${id}`);
+	}
+
 	createQuest(data: CreateQuestRequest): Promise<SearchQuest> {
 		return this.request("POST", "/api/quests", data);
 	}
@@ -97,6 +115,14 @@ class PanelApiClient {
 
 	async deleteQuest(id: number): Promise<void> {
 		await this.request("DELETE", `/api/quests/${id}`);
+	}
+
+	getSellers(page = 1, limit = 20): Promise<SellersResponse> {
+		return this.request("GET", `/api/sellers?page=${page}&limit=${limit}`);
+	}
+
+	getSeller(id: number): Promise<SellerWithSnapshots> {
+		return this.request("GET", `/api/sellers/${id}`);
 	}
 }
 

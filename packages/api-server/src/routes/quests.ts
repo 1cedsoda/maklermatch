@@ -10,13 +10,18 @@ import {
 	updateQuest,
 	deleteQuest,
 } from "../services/quests";
-import { reloadQuests } from "../services/scheduler";
+import { reloadQuests, getSchedulerState } from "../services/scheduler";
 
 const router = Router();
 
 router.get("/", (_req, res) => {
 	const quests = getAllQuests();
 	res.json({ quests });
+});
+
+router.get("/scheduler-status", (_req, res) => {
+	const schedule = getSchedulerState();
+	res.json({ schedule });
 });
 
 router.get("/:id", (req, res) => {

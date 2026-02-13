@@ -76,6 +76,7 @@ function insertAbstractVersion(
 	item: IngestListing,
 	now: string,
 	previousVersionId: number | null,
+	scrapingTaskId: number | null,
 ) {
 	return tx
 		.insert(listingAbstractSnapshots)
@@ -95,6 +96,7 @@ function insertAbstractVersion(
 			isPrivate: item.isPrivate,
 			tags: item.tags,
 			seenAt: now,
+			scrapingTaskId,
 		})
 		.returning()
 		.get();
@@ -107,6 +109,7 @@ function insertDetailSnapshot(
 	sellerId: number | null,
 	now: string,
 	previousSnapshotId: number | null,
+	scrapingTaskId: number | null,
 ) {
 	return tx
 		.insert(listingDetailSnapshots)
@@ -125,6 +128,7 @@ function insertDetailSnapshot(
 			sellerName: detail.seller.name,
 			sellerType: detail.seller.type,
 			seenAt: now,
+			scrapingTaskId,
 		})
 		.returning()
 		.get();
@@ -134,6 +138,7 @@ function upsertSeller(
 	tx: Tx,
 	sellerInfo: DetailPage["seller"],
 	now: string,
+	scrapingTaskId: number | null,
 ): number | null {
 	if (!sellerInfo.userId) return null;
 
@@ -174,6 +179,7 @@ function upsertSeller(
 				activeSince: sellerInfo.activeSince,
 				otherAdsCount: sellerInfo.otherAdsCount,
 				seenAt: now,
+				scrapingTaskId,
 			})
 			.run();
 	}
@@ -290,6 +296,7 @@ export function markRemovedListings(
 export function ingestListings(
 	city: string,
 	items: IngestListing[],
+	scrapingTaskId: number | null = null,
 ): {
 	newCount: number;
 	updatedCount: number;
@@ -337,13 +344,19 @@ export function ingestListings(
 						item,
 						now,
 						latestAbstract?.id ?? null,
+						scrapingTaskId,
 					);
 					versionCount++;
 				}
 
 				// Detail snapshot chain
 				if (item.detailPage) {
-					const sellerId = upsertSeller(tx, item.detailPage.seller, now);
+					const sellerId = upsertSeller(
+						tx,
+						item.detailPage.seller,
+						now,
+						scrapingTaskId,
+					);
 
 					const latestDetail = tx
 						.select()
@@ -366,6 +379,7 @@ export function ingestListings(
 							sellerId,
 							now,
 							latestDetail?.id ?? null,
+							scrapingTaskId,
 						);
 						detailSnapshotCount++;
 					}
@@ -385,11 +399,16 @@ export function ingestListings(
 					})
 					.run();
 
-				insertAbstractVersion(tx, item.id, item, now, null);
+				insertAbstractVersion(tx, item.id, item, now, null, scrapingTaskId);
 				versionCount++;
 
 				if (item.detailPage) {
-					const sellerId = upsertSeller(tx, item.detailPage.seller, now);
+					const sellerId = upsertSeller(
+						tx,
+						item.detailPage.seller,
+						now,
+						scrapingTaskId,
+					);
 					insertDetailSnapshot(
 						tx,
 						item.id,
@@ -397,6 +416,7 @@ export function ingestListings(
 						sellerId,
 						now,
 						null,
+						scrapingTaskId,
 					);
 					detailSnapshotCount++;
 				}

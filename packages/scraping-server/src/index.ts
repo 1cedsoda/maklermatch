@@ -2,6 +2,7 @@ import { io } from "socket.io-client";
 import { SCRAPER_SECRET, SocketEvents } from "@scraper/api-types";
 import { ApiClient } from "./api-client";
 import { setupScraperHandlers } from "./socket-handlers";
+import { tapStdout } from "./stdout-tap";
 import { logger } from "./logger";
 
 const log = logger.child({ module: "main" });
@@ -14,6 +15,8 @@ const socket = io(API_SERVER_URL, {
 	reconnectionDelay: 1000,
 	reconnectionDelayMax: 30000,
 });
+
+tapStdout(socket);
 
 const apiClient = new ApiClient(socket);
 

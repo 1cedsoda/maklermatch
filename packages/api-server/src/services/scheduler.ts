@@ -177,6 +177,13 @@ export function startScheduler(): void {
 	reloadQuests();
 }
 
+export function getSchedulerState(): { questId: number; nextRunAt: number }[] {
+	return scheduledQuests.map((sq) => ({
+		questId: sq.quest.id,
+		nextRunAt: sq.nextRunAt,
+	}));
+}
+
 export function stopScheduler(): void {
 	if (timer) {
 		clearTimeout(timer);

@@ -9,8 +9,9 @@ router.get("/", (req, res) => {
 	const questIdFilter = req.query.questId
 		? Number(req.query.questId)
 		: undefined;
+	const limit = req.query.limit ? Number(req.query.limit) : undefined;
 
-	const rows = db
+	let query = db
 		.select({
 			id: scrapingTasks.id,
 			questId: scrapingTasks.questId,
@@ -27,13 +28,19 @@ router.get("/", (req, res) => {
 		})
 		.from(scrapingTasks)
 		.innerJoin(searchQuests, eq(scrapingTasks.questId, searchQuests.id))
-		.orderBy(desc(scrapingTasks.startedAt))
-		.all();
+		.$dynamic();
 
-	const tasks = questIdFilter
-		? rows.filter((r) => r.questId === questIdFilter)
-		: rows;
+	if (questIdFilter) {
+		query = query.where(eq(scrapingTasks.questId, questIdFilter));
+	}
 
+	query = query.orderBy(desc(scrapingTasks.startedAt));
+
+	if (limit) {
+		query = query.limit(limit);
+	}
+
+	const tasks = query.all();
 	res.json({ tasks });
 });
 

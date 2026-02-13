@@ -72,3 +72,14 @@ export const scrapingTasksResponseSchema = z.object({
 
 export type ScrapingTask = z.infer<typeof scrapingTaskSchema>;
 export type ScrapingTasksResponse = z.infer<typeof scrapingTasksResponseSchema>;
+
+// ─── Scheduler Status ────────────────────────────────────────
+
+export interface SchedulerEntry {
+	questId: number;
+	nextRunAt: number;
+}
+
+export interface SchedulerStatusResponse {
+	schedule: SchedulerEntry[];
+}

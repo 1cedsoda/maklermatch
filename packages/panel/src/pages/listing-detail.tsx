@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
 	Table,
 	TableBody,
@@ -43,7 +44,9 @@ export function ListingDetailPage() {
 		return <p className="text-muted-foreground">Loading...</p>;
 	}
 
-	const latest = listing.versions[0];
+	const latestAbstract = listing.versions[0];
+	const latestDetail = listing.detailSnapshots[0];
+	const description = latestDetail?.description ?? latestAbstract?.description;
 
 	return (
 		<div className="space-y-6">
@@ -56,20 +59,50 @@ export function ListingDetailPage() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>{latest?.title ?? listing.id}</CardTitle>
+					<CardTitle>{latestAbstract?.title ?? listing.id}</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-2 text-sm">
-					<p>
-						<span className="text-muted-foreground">City:</span> {listing.city}
-					</p>
-					<p>
-						<span className="text-muted-foreground">Price:</span>{" "}
-						{latest?.price ?? "-"}
-					</p>
-					<p>
-						<span className="text-muted-foreground">Location:</span>{" "}
-						{latest?.location ?? "-"}
-					</p>
+					<div className="grid grid-cols-2 gap-x-8 gap-y-2">
+						<p>
+							<span className="text-muted-foreground">City:</span>{" "}
+							{listing.city}
+						</p>
+						<p>
+							<span className="text-muted-foreground">Price:</span>{" "}
+							{latestAbstract?.price ?? "-"}
+						</p>
+						<p>
+							<span className="text-muted-foreground">Location:</span>{" "}
+							{latestAbstract?.location ?? "-"}
+						</p>
+						{latestDetail?.category && (
+							<p>
+								<span className="text-muted-foreground">Category:</span>{" "}
+								{latestDetail.category}
+							</p>
+						)}
+						<p>
+							<span className="text-muted-foreground">First seen:</span>{" "}
+							{new Date(listing.firstSeen).toLocaleString()}
+						</p>
+						<p>
+							<span className="text-muted-foreground">Last seen:</span>{" "}
+							{new Date(listing.lastSeen).toLocaleString()}
+						</p>
+						{latestDetail?.viewCount != null && (
+							<p>
+								<span className="text-muted-foreground">Views:</span>{" "}
+								{latestDetail.viewCount}
+							</p>
+						)}
+						{latestDetail?.imageUrls && latestDetail.imageUrls.length > 0 && (
+							<p>
+								<span className="text-muted-foreground">Images:</span>{" "}
+								{latestDetail.imageUrls.length}
+							</p>
+						)}
+					</div>
+
 					<p>
 						<span className="text-muted-foreground">URL:</span>{" "}
 						<a
@@ -81,18 +114,66 @@ export function ListingDetailPage() {
 							{listing.url}
 						</a>
 					</p>
-					<p>
-						<span className="text-muted-foreground">First seen:</span>{" "}
-						{new Date(listing.firstSeen).toLocaleString()}
-					</p>
-					<p>
-						<span className="text-muted-foreground">Last seen:</span>{" "}
-						{new Date(listing.lastSeen).toLocaleString()}
-					</p>
-					{latest?.description && (
+
+					{listing.seller && (
+						<p>
+							<span className="text-muted-foreground">Seller:</span>{" "}
+							<Link
+								to={`/sellers/${listing.seller.id}`}
+								className="text-primary hover:underline"
+							>
+								{listing.seller.latestSnapshot?.name ??
+									listing.seller.externalId}
+							</Link>
+							{listing.seller.latestSnapshot?.type && (
+								<Badge variant="outline" className="ml-2">
+									{listing.seller.latestSnapshot.type}
+								</Badge>
+							)}
+						</p>
+					)}
+
+					{latestAbstract && latestAbstract.tags.length > 0 && (
+						<div className="flex items-center gap-1.5 flex-wrap">
+							<span className="text-muted-foreground">Tags:</span>
+							{latestAbstract.tags.map((tag) => (
+								<Badge key={tag} variant="secondary">
+									{tag}
+								</Badge>
+							))}
+						</div>
+					)}
+
+					{latestDetail?.features && latestDetail.features.length > 0 && (
+						<div className="flex items-center gap-1.5 flex-wrap">
+							<span className="text-muted-foreground">Features:</span>
+							{latestDetail.features.map((f) => (
+								<Badge key={f} variant="outline">
+									{f}
+								</Badge>
+							))}
+						</div>
+					)}
+
+					{latestDetail?.details &&
+						Object.keys(latestDetail.details).length > 0 && (
+							<div>
+								<span className="text-muted-foreground">Details:</span>
+								<div className="mt-1 grid grid-cols-2 gap-x-8 gap-y-1">
+									{Object.entries(latestDetail.details).map(([key, value]) => (
+										<p key={key}>
+											<span className="text-muted-foreground">{key}:</span>{" "}
+											{value}
+										</p>
+									))}
+								</div>
+							</div>
+						)}
+
+					{description && (
 						<div>
 							<span className="text-muted-foreground">Description:</span>
-							<p className="mt-1 whitespace-pre-wrap">{latest.description}</p>
+							<p className="mt-1 whitespace-pre-wrap">{description}</p>
 						</div>
 					)}
 				</CardContent>
@@ -100,7 +181,7 @@ export function ListingDetailPage() {
 
 			<div>
 				<h3 className="text-lg font-semibold mb-2">
-					Version History ({listing.versions.length})
+					Abstract Snapshots ({listing.versions.length})
 				</h3>
 				<Table>
 					<TableHeader>
@@ -125,6 +206,50 @@ export function ListingDetailPage() {
 					</TableBody>
 				</Table>
 			</div>
+
+			{listing.detailSnapshots.length > 0 && (
+				<div>
+					<h3 className="text-lg font-semibold mb-2">
+						Detail Snapshots ({listing.detailSnapshots.length})
+					</h3>
+					<Table>
+						<TableHeader>
+							<TableRow>
+								<TableHead>#</TableHead>
+								<TableHead>Category</TableHead>
+								<TableHead>Views</TableHead>
+								<TableHead>Images</TableHead>
+								<TableHead>Seller</TableHead>
+								<TableHead>Seen At</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{listing.detailSnapshots.map((d, i) => (
+								<TableRow key={d.id}>
+									<TableCell>{listing.detailSnapshots.length - i}</TableCell>
+									<TableCell>{d.category ?? "-"}</TableCell>
+									<TableCell>{d.viewCount ?? "-"}</TableCell>
+									<TableCell>{d.imageUrls?.length ?? 0}</TableCell>
+									<TableCell>
+										{d.sellerId && listing.seller ? (
+											<Link
+												to={`/sellers/${listing.seller.id}`}
+												className="text-primary hover:underline"
+											>
+												{listing.seller.latestSnapshot?.name ??
+													listing.seller.externalId}
+											</Link>
+										) : (
+											"-"
+										)}
+									</TableCell>
+									<TableCell>{new Date(d.seenAt).toLocaleString()}</TableCell>
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
+				</div>
+			)}
 		</div>
 	);
 }

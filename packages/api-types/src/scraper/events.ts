@@ -9,6 +9,7 @@ import type {
 	ListingCheckAck,
 	IngestListingsPayload,
 	IngestListingsAck,
+	LogLinePayload,
 	ScraperTriggerPayload,
 } from "./lifecycle";
 
@@ -21,6 +22,7 @@ export const SocketEvents = {
 	INGEST_LISTINGS: "listing:ingest",
 	SCRAPER_STATUS: "scraper:status",
 	SCRAPER_TRIGGER: "scraper:trigger",
+	LOG_LINE: "log:line",
 } as const;
 
 export interface ScraperToServerEvents {
@@ -48,6 +50,7 @@ export interface ScraperToServerEvents {
 		data: IngestListingsPayload,
 		ack: (response: IngestListingsAck) => void,
 	) => void;
+	[SocketEvents.LOG_LINE]: (data: LogLinePayload) => void;
 }
 
 export interface ServerToScraperEvents {

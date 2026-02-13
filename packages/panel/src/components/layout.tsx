@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import {
 	LayoutDashboard,
 	List,
+	Users,
 	Search,
 	Zap,
 	Bot,
@@ -13,7 +14,8 @@ import {
 const NAV_ITEMS: { to: string; label: string; icon: LucideIcon }[] = [
 	{ to: "/", label: "Dashboard", icon: LayoutDashboard },
 	{ to: "/listings", label: "Listings", icon: List },
-	{ to: "/quests", label: "Quests", icon: Search },
+	{ to: "/sellers", label: "Sellers", icon: Users },
+	{ to: "/quests", label: "Scraping Quests", icon: Search },
 	{ to: "/scraping-tasks", label: "Scraping Tasks", icon: Zap },
 	{ to: "/scraper", label: "Scraper", icon: Bot },
 ];

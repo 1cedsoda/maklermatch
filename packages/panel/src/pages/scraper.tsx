@@ -93,7 +93,7 @@ export function ScraperPage() {
 									}
 								>
 									<option value="" disabled>
-										Select a quest
+										Select a scraping quest
 									</option>
 									{quests.map((q) => (
 										<option key={q.id} value={q.id}>

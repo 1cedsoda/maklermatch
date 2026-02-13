@@ -9,6 +9,9 @@ import { ListingDetailPage } from "@/pages/listing-detail";
 import { ScrapingTasksPage } from "@/pages/scraping-tasks";
 import { ScraperPage } from "@/pages/scraper";
 import { QuestsPage } from "@/pages/quests";
+import { QuestDetailPage } from "@/pages/quest-detail";
+import { SellersPage } from "@/pages/sellers";
+import { SellerDetailPage } from "@/pages/seller-detail";
 
 export function App() {
 	return (
@@ -26,7 +29,10 @@ export function App() {
 						<Route index element={<DashboardPage />} />
 						<Route path="listings" element={<ListingsPage />} />
 						<Route path="listings/:id" element={<ListingDetailPage />} />
+						<Route path="sellers" element={<SellersPage />} />
+						<Route path="sellers/:id" element={<SellerDetailPage />} />
 						<Route path="quests" element={<QuestsPage />} />
+						<Route path="quests/:id" element={<QuestDetailPage />} />
 						<Route path="scraping-tasks" element={<ScrapingTasksPage />} />
 						<Route path="scraper" element={<ScraperPage />} />
 					</Route>

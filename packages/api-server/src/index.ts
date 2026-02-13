@@ -10,6 +10,7 @@ import listingsRoutes from "./routes/listings";
 import scrapingTasksRoutes from "./routes/scraping-tasks";
 import scraperProxyRoutes from "./routes/scraper-proxy";
 import questsRoutes from "./routes/quests";
+import sellersRoutes from "./routes/sellers";
 import { setupScraperSocket } from "./socket/scraper";
 import { startScheduler } from "./services/scheduler";
 
@@ -32,6 +33,7 @@ app.use("/api/listings", jwtAuth, listingsRoutes);
 app.use("/api/scraping-tasks", jwtAuth, scrapingTasksRoutes);
 app.use("/api/scraper", jwtAuth, scraperProxyRoutes);
 app.use("/api/quests", jwtAuth, questsRoutes);
+app.use("/api/sellers", jwtAuth, sellersRoutes);
 
 // Run migrations on startup
 migrate(db, { migrationsFolder: "./drizzle" });

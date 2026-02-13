@@ -7,6 +7,7 @@ import {
 } from "../socket/scraper";
 import { getQuestById, questToKleinanzeigenSearch } from "../services/quests";
 import { getScrapingTask } from "../services/ingest";
+import { getLogLines, getAllLogLines } from "../services/log-buffer";
 
 const router = Router();
 
@@ -88,6 +89,15 @@ router.post("/start", async (req, res) => {
 	} catch {
 		res.status(504).json({ error: "Scraping server did not respond" });
 	}
+});
+
+router.get("/logs", (req, res) => {
+	const scraperId = req.query.scraperId as string | undefined;
+	if (scraperId) {
+		res.json({ scraperId, lines: getLogLines(scraperId) });
+		return;
+	}
+	res.json({ scrapers: getAllLogLines() });
 });
 
 export default router;

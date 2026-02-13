@@ -11,6 +11,7 @@ export const sellerSnapshotSchema = z.object({
 	activeSince: z.string().nullable(),
 	otherAdsCount: z.number().nullable(),
 	seenAt: z.string(),
+	scrapingTaskId: z.number().nullable(),
 });
 
 export const sellerSchema = z.object({
@@ -42,6 +43,7 @@ export const listingAbstractSnapshotSchema = z.object({
 	isPrivate: z.boolean(),
 	tags: z.array(z.string()),
 	seenAt: z.string(),
+	scrapingTaskId: z.number().nullable(),
 });
 
 // ─── Listing Detail Snapshot ─────────────────────────────────
@@ -60,6 +62,7 @@ export const listingDetailSnapshotSchema = z.object({
 	viewCount: z.number().nullable(),
 	sellerId: z.number().nullable(),
 	seenAt: z.string(),
+	scrapingTaskId: z.number().nullable(),
 });
 
 // ─── Listing Schemas ─────────────────────────────────────────
@@ -74,6 +77,8 @@ export const listingSchema = z.object({
 
 export const listingWithLatestVersionSchema = listingSchema.extend({
 	latestVersion: listingAbstractSnapshotSchema.nullable(),
+	sellerId: z.number().nullable(),
+	sellerName: z.string().nullable(),
 });
 
 export const listingWithVersionsSchema = listingSchema.extend({
@@ -84,6 +89,20 @@ export const listingWithVersionsSchema = listingSchema.extend({
 
 export const listingsResponseSchema = z.object({
 	listings: z.array(listingWithLatestVersionSchema),
+	total: z.number(),
+	page: z.number(),
+	limit: z.number(),
+});
+
+// ─── Seller Response Schemas ─────────────────────────────────
+
+export const sellerWithSnapshotsSchema = sellerSchema.extend({
+	snapshots: z.array(sellerSnapshotSchema),
+	listings: z.array(listingWithLatestVersionSchema),
+});
+
+export const sellersResponseSchema = z.object({
+	sellers: z.array(sellerWithLatestSnapshotSchema),
 	total: z.number(),
 	page: z.number(),
 	limit: z.number(),
@@ -106,3 +125,5 @@ export type ListingWithLatestVersion = z.infer<
 >;
 export type ListingWithVersions = z.infer<typeof listingWithVersionsSchema>;
 export type ListingsResponse = z.infer<typeof listingsResponseSchema>;
+export type SellerWithSnapshots = z.infer<typeof sellerWithSnapshotsSchema>;
+export type SellersResponse = z.infer<typeof sellersResponseSchema>;

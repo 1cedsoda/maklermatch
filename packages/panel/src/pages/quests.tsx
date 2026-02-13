@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router";
+import { api, type ScraperStatusResponse } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Table,
@@ -15,43 +17,75 @@ import {
 } from "@/components/ui/table";
 import type { SearchQuest, CreateQuestRequest } from "@scraper/api-types";
 
+function formatNextRun(nextRunAt: number | undefined, active: boolean): string {
+	if (!active) return "--";
+	if (!nextRunAt) return "pending";
+	const diffMs = nextRunAt - Date.now();
+	if (diffMs <= 0) return "imminent";
+	const mins = Math.round(diffMs / 60_000);
+	if (mins < 60) return `in ${mins}min`;
+	const hours = Math.floor(mins / 60);
+	const remainMins = mins % 60;
+	return `in ${hours}h ${remainMins}min`;
+}
+
 export function QuestsPage() {
 	const [quests, setQuests] = useState<SearchQuest[]>([]);
 	const [showForm, setShowForm] = useState(false);
 	const [error, setError] = useState("");
+	const [schedulerStatus, setSchedulerStatus] = useState<Map<number, number>>(
+		new Map(),
+	);
+	const [scraperStatus, setScraperStatus] =
+		useState<ScraperStatusResponse | null>(null);
 
 	const fetchQuests = () => {
 		api.getQuests().then((res) => setQuests(res.quests));
 	};
 
+	const fetchSchedulerStatus = useCallback(() => {
+		api.getSchedulerStatus().then((res) => {
+			const map = new Map(res.schedule.map((s) => [s.questId, s.nextRunAt]));
+			setSchedulerStatus(map);
+		});
+	}, []);
+
+	const fetchScraperStatus = useCallback(() => {
+		api
+			.getScraperStatus()
+			.then(setScraperStatus)
+			.catch(() => {});
+	}, []);
+
 	useEffect(() => {
 		fetchQuests();
-	}, []);
+		fetchSchedulerStatus();
+		fetchScraperStatus();
+		const schedulerInterval = setInterval(fetchSchedulerStatus, 30_000);
+		const scraperInterval = setInterval(fetchScraperStatus, 10_000);
+		return () => {
+			clearInterval(schedulerInterval);
+			clearInterval(scraperInterval);
+		};
+	}, [fetchSchedulerStatus, fetchScraperStatus]);
 
 	const handleToggleActive = async (quest: SearchQuest) => {
 		try {
 			await api.updateQuest(quest.id, { active: !quest.active });
 			fetchQuests();
+			fetchSchedulerStatus();
 		} catch {
-			setError(`Failed to update quest "${quest.name}"`);
-		}
-	};
-
-	const handleDelete = async (quest: SearchQuest) => {
-		if (!confirm(`Delete quest "${quest.name}"?`)) return;
-		try {
-			await api.deleteQuest(quest.id);
-			fetchQuests();
-		} catch {
-			setError(`Failed to delete quest "${quest.name}"`);
+			setError(`Failed to update scraping quest "${quest.name}"`);
 		}
 	};
 
 	const handleStartScrape = async (quest: SearchQuest) => {
 		try {
 			await api.startScrape(quest.id);
+			fetchScraperStatus();
+			fetchSchedulerStatus();
 		} catch {
-			setError(`Failed to start scrape for quest "${quest.name}"`);
+			setError(`Failed to start scrape for scraping quest "${quest.name}"`);
 		}
 	};
 
@@ -61,16 +95,19 @@ export function QuestsPage() {
 			setShowForm(false);
 			fetchQuests();
 		} catch {
-			setError("Failed to create quest");
+			setError("Failed to create scraping quest");
 		}
 	};
+
+	const runningQuestId = scraperStatus?.currentTask?.questId ?? null;
+	const runningTaskId = scraperStatus?.currentTask?.id ?? null;
 
 	return (
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
-				<h2 className="text-2xl font-bold">Quests</h2>
+				<h2 className="text-2xl font-bold">Scraping Quests</h2>
 				<Button onClick={() => setShowForm(!showForm)}>
-					{showForm ? "Cancel" : "New Quest"}
+					{showForm ? "Cancel" : "New Scraping Quest"}
 				</Button>
 			</div>
 
@@ -94,58 +131,63 @@ export function QuestsPage() {
 				<TableHeader>
 					<TableRow>
 						<TableHead>Name</TableHead>
-						<TableHead>Location</TableHead>
-						<TableHead>Category</TableHead>
-						<TableHead>Active</TableHead>
-						<TableHead>Interval (min)</TableHead>
-						<TableHead>Max Pages</TableHead>
+						<TableHead>Scheduled</TableHead>
+						<TableHead>Next Run</TableHead>
+						<TableHead>Status</TableHead>
 						<TableHead className="text-right">Actions</TableHead>
 					</TableRow>
 				</TableHeader>
 				<TableBody>
-					{quests.map((q) => (
-						<TableRow key={q.id}>
-							<TableCell className="font-medium">{q.name}</TableCell>
-							<TableCell>{q.location}</TableCell>
-							<TableCell>{q.category}</TableCell>
-							<TableCell>
-								<Badge
-									variant={q.active ? "default" : "secondary"}
-									className="cursor-pointer"
-									onClick={() => handleToggleActive(q)}
-								>
-									{q.active ? "active" : "inactive"}
-								</Badge>
-							</TableCell>
-							<TableCell>
-								{q.minIntervalMinutes}–{q.maxIntervalMinutes}
-							</TableCell>
-							<TableCell>{q.maxPages ?? "all"}</TableCell>
-							<TableCell className="text-right space-x-2">
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() => handleStartScrape(q)}
-								>
-									Scrape
-								</Button>
-								<Button
-									variant="destructive"
-									size="sm"
-									onClick={() => handleDelete(q)}
-								>
-									Delete
-								</Button>
-							</TableCell>
-						</TableRow>
-					))}
+					{quests.map((q) => {
+						const isRunning = runningQuestId === q.id;
+						return (
+							<TableRow key={q.id}>
+								<TableCell className="font-medium">
+									<Link
+										to={`/quests/${q.id}`}
+										className="text-primary underline-offset-4 hover:underline"
+									>
+										{q.name}
+									</Link>
+								</TableCell>
+								<TableCell>
+									<Switch
+										checked={q.active}
+										onCheckedChange={() => handleToggleActive(q)}
+									/>
+								</TableCell>
+								<TableCell className="text-muted-foreground text-sm">
+									{formatNextRun(schedulerStatus.get(q.id), q.active)}
+								</TableCell>
+								<TableCell>
+									{isRunning ? (
+										<Link to={`/scraping-tasks`} className="inline-flex">
+											<Badge variant="default">running</Badge>
+										</Link>
+									) : (
+										<span className="text-muted-foreground text-sm">idle</span>
+									)}
+								</TableCell>
+								<TableCell className="text-right">
+									<Button
+										variant="outline"
+										size="sm"
+										disabled={isRunning}
+										onClick={() => handleStartScrape(q)}
+									>
+										Scrape
+									</Button>
+								</TableCell>
+							</TableRow>
+						);
+					})}
 					{quests.length === 0 && (
 						<TableRow>
 							<TableCell
-								colSpan={7}
+								colSpan={5}
 								className="text-center text-muted-foreground"
 							>
-								No quests yet
+								No scraping quests yet
 							</TableCell>
 						</TableRow>
 					)}
@@ -184,7 +226,9 @@ function CreateQuestForm({
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className="text-sm font-medium">Create Quest</CardTitle>
+				<CardTitle className="text-sm font-medium">
+					Create Scraping Quest
+				</CardTitle>
 			</CardHeader>
 			<CardContent>
 				<form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">

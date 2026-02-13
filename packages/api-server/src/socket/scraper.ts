@@ -10,6 +10,7 @@ import {
 	scrapeErrorPayloadSchema,
 	listingCheckPayloadSchema,
 	ingestListingsPayloadSchema,
+	logLinePayloadSchema,
 } from "@scraper/api-types";
 import {
 	createScrapingTask,
@@ -19,6 +20,7 @@ import {
 	checkListings,
 	markRemovedListings,
 } from "../services/ingest";
+import { pushLogLine } from "../services/log-buffer";
 import { getQuestById } from "../services/quests";
 import { logger } from "../logger";
 
@@ -140,7 +142,7 @@ export function setupScraperSocket(server: SocketIOServer) {
 			const quest = task ? getQuestById(task.questId) : null;
 			const city = quest?.location ?? "";
 
-			const result = ingestListings(city, listings);
+			const result = ingestListings(city, listings, taskId);
 			updateScrapingTask(taskId, {
 				status: "success",
 				pagesScraped,
@@ -172,8 +174,18 @@ export function setupScraperSocket(server: SocketIOServer) {
 			if (!parsed.success) {
 				return;
 			}
-			const result = ingestListings(parsed.data.city, parsed.data.listings);
+			const result = ingestListings(
+				parsed.data.city,
+				parsed.data.listings,
+				currentScrapingTaskId,
+			);
 			ack(result);
+		});
+
+		socket.on(SocketEvents.LOG_LINE, (data) => {
+			const parsed = logLinePayloadSchema.safeParse(data);
+			if (!parsed.success) return;
+			pushLogLine(socket.id, parsed.data.line, parsed.data.ts);
 		});
 
 		socket.on(SocketEvents.SCRAPE_ERROR, (data, ack) => {
