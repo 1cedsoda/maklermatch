@@ -139,3 +139,80 @@ export const listingDetailSnapshots = sqliteTable("listing_detail_snapshots", {
 		() => scrapingTasks.id,
 	),
 });
+
+// --- Email / Conversations ---
+
+export const conversations = sqliteTable("conversations", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	listingId: text("listing_id")
+		.notNull()
+		.references(() => listings.id),
+	brokerId: text("broker_id").notNull(),
+	sellerName: text("seller_name"),
+	kleinanzeigenReplyTo: text("kleinanzeigen_reply_to"),
+	emailSubject: text("email_subject"),
+	status: text("status", {
+		enum: ["active", "reply_received", "stopped", "done"],
+	})
+		.notNull()
+		.default("active"),
+	currentStage: text("current_stage", {
+		enum: ["initial", "followup_1", "followup_2", "conversation", "done"],
+	})
+		.notNull()
+		.default("initial"),
+	replySentiment: text("reply_sentiment"),
+	firstContactAt: text("first_contact_at"),
+	lastMessageAt: text("last_message_at"),
+	nextFollowupAt: text("next_followup_at"),
+	createdAt: text("created_at")
+		.notNull()
+		.$defaultFn(() => new Date().toISOString()),
+});
+
+export const conversationMessages = sqliteTable("conversation_messages", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	conversationId: integer("conversation_id")
+		.notNull()
+		.references(() => conversations.id),
+	direction: text("direction", { enum: ["outbound", "inbound"] }).notNull(),
+	channel: text("channel", { enum: ["browser", "email"] }).notNull(),
+	body: text("body").notNull(),
+	stage: text("stage"),
+	spamGuardScore: real("spam_guard_score"),
+	kleinanzeigenAddress: text("kleinanzeigen_address"),
+	sentAt: text("sent_at")
+		.notNull()
+		.$defaultFn(() => new Date().toISOString()),
+});
+
+export const inboundEmails = sqliteTable("inbound_emails", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	fromAddress: text("from_address").notNull(),
+	toAddress: text("to_address").notNull(),
+	subject: text("subject"),
+	bodyText: text("body_text"),
+	bodyHtml: text("body_html"),
+	conversationId: integer("conversation_id").references(() => conversations.id),
+	processed: integer("processed", { mode: "boolean" }).notNull().default(false),
+	receivedAt: text("received_at")
+		.notNull()
+		.$defaultFn(() => new Date().toISOString()),
+});
+
+export const scheduledSends = sqliteTable("scheduled_sends", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	conversationId: integer("conversation_id")
+		.notNull()
+		.references(() => conversations.id),
+	message: text("message").notNull(),
+	sendAfter: text("send_after").notNull(),
+	status: text("status", {
+		enum: ["pending", "sending", "sent", "cancelled"],
+	})
+		.notNull()
+		.default("pending"),
+	createdAt: text("created_at")
+		.notNull()
+		.$defaultFn(() => new Date().toISOString()),
+});

@@ -10,5 +10,8 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.15",
 		"lefthook": "^2.1.1"
+	},
+	"dependencies": {
+		"docker": "^1.0.0"
 	}
 }
