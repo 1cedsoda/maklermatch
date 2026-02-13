@@ -72,6 +72,7 @@ export const listingAbstractSnapshots = sqliteTable(
 		location: text("location"),
 		distance: text("distance"),
 		date: text("date"),
+		dateParsed: text("date_parsed"),
 		imageUrl: text("image_url"),
 		imageCount: integer("image_count").notNull().default(0),
 		isPrivate: integer("is_private", { mode: "boolean" })

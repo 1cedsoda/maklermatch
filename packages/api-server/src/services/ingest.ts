@@ -91,6 +91,7 @@ function insertAbstractVersion(
 			location: item.location,
 			distance: item.distance,
 			date: item.date,
+			dateParsed: item.dateParsed,
 			imageUrl: item.imageUrl,
 			imageCount: item.imageCount,
 			isPrivate: item.isPrivate,

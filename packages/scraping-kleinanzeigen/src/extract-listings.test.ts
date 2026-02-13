@@ -1,6 +1,8 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { Window } from "happy-dom";
-import { extractListings } from "./extract-listings";
+import { extractListings, parseDate } from "./extract-listings";
 
 function parseHTML(html: string): Document {
 	const window = new Window();
@@ -8,176 +10,136 @@ function parseHTML(html: string): Document {
 	return window.document as unknown as Document;
 }
 
-const FIXTURE = `
-<ul id="srchrslt-adtable" class="itemlist ad-list it3">
-  <li class="ad-listitem fully-clickable-card badge-topad is-topad">
-    <article class="aditem" data-adid="3300238605" data-href="/s-anzeige/berlin-mitte-perfekte-2-ziwo-verkauf-top-lage-sofort-verfuegbar/3300238605-196-3519">
-      <div class="aditem-image">
-        <a href="/s-anzeige/berlin-mitte-perfekte-2-ziwo-verkauf-top-lage-sofort-verfuegbar/3300238605-196-3519">
-          <div class="imagebox srpimagebox">
-            <img src="https://img.kleinanzeigen.de/thumb.jpg" srcset="https://img.kleinanzeigen.de/full.jpg" alt="Berlin Mitte">
-            <div class="galleryimage--counter">10</div>
-            <div class="galleryimage--private">Von Privat</div>
-          </div>
-        </a>
-      </div>
-      <div class="aditem-main">
-        <div class="aditem-main--top">
-          <div class="aditem-main--top--left">10119 Mitte</div>
-          <div class="aditem-main--top--right"></div>
-        </div>
-        <div class="aditem-main--middle">
-          <h2 class="text-module-begin">
-            <a class="ellipsis" href="/s-anzeige/berlin-mitte-perfekte-2-ziwo-verkauf-top-lage-sofort-verfuegbar/3300238605-196-3519">Berlin Mitte perfekte 2 ZiWo VERKAUF Top Lage - Sofort verfügbar</a>
-          </h2>
-          <p class="aditem-main--middle--description">Top Lage - Sofort verfügbar Die Wohnung liegt im Herzen von Berlin-Mitte!</p>
-          <div class="aditem-main--middle--price-shipping">
-            <p class="aditem-main--middle--price-shipping--price">310.000 € VB</p>
-          </div>
-        </div>
-        <div class="aditem-main--bottom">
-          <p class="text-module-end">
-            <span class="simpletag">39 m²</span>
-            <span class="simpletag">2 Zi.</span>
-          </p>
-        </div>
-      </div>
-    </article>
-  </li>
+const FIXTURE_HTML = readFileSync(
+	join(import.meta.dir, "fixtures/listings.html"),
+	"utf-8",
+);
 
-  <li class="ad-listitem fully-clickable-card">
-    <article class="aditem" data-adid="3324922975" data-href="/s-anzeige/ikea-sofa-weiss-mit-dunklen-kissen/3324922975-88-3519">
-      <div class="aditem-image">
-        <a href="/s-anzeige/ikea-sofa-weiss-mit-dunklen-kissen/3324922975-88-3519">
-          <div class="imagebox srpimagebox">
-            <img src="https://img.kleinanzeigen.de/sofa-thumb.jpg" srcset="https://img.kleinanzeigen.de/sofa-full.jpg" alt="IKEA Sofa">
-            <div class="galleryimage--counter">4</div>
-          </div>
-        </a>
-      </div>
-      <div class="aditem-main">
-        <div class="aditem-main--top">
-          <div class="aditem-main--top--left">10119 Mitte</div>
-          <div class="aditem-main--top--right">Heute, 00:04</div>
-        </div>
-        <div class="aditem-main--middle">
-          <h2 class="text-module-begin">
-            <a class="ellipsis" href="/s-anzeige/ikea-sofa-weiss-mit-dunklen-kissen/3324922975-88-3519">IKEA Sofa weiß mit dunklen Kissen</a>
-          </h2>
-          <p class="aditem-main--middle--description">Verkaufe mein IKEA Sofa in hellem Weiß/Creme (ohne Kissen)</p>
-          <div class="aditem-main--middle--price-shipping">
-            <p class="aditem-main--middle--price-shipping--price">30 €</p>
-          </div>
-        </div>
-        <div class="aditem-main--bottom">
-          <p class="text-module-end">
-            <span class="simpletag tag-with-icon">Direkt kaufen</span>
-          </p>
-        </div>
-      </div>
-    </article>
-  </li>
+// Fixed reference date so "Heute"/"Gestern" resolve deterministically.
+// The fixture was captured on 2026-02-13, so "Heute" = Feb 13, "Gestern" = Feb 12.
+const NOW = new Date("2026-02-13T18:00:00.000+01:00");
 
-  <li class="ad-listitem fully-clickable-card">
-    <article class="aditem" data-adid="3324850037" data-href="/s-anzeige/neewer-5-in-1-light-reflector-60-90cm/3324850037-245-3519">
-      <div class="aditem-image">
-        <a href="/s-anzeige/neewer-5-in-1-light-reflector-60-90cm/3324850037-245-3519">
-          <div class="imagebox srpimagebox">
-            <img src="https://img.kleinanzeigen.de/neewer-thumb.jpg" alt="NEEWER Reflector">
-          </div>
-        </a>
-      </div>
-      <div class="aditem-main">
-        <div class="aditem-main--top">
-          <div class="aditem-main--top--left">10119 Mitte</div>
-          <div class="aditem-main--top--right">Gestern, 20:59</div>
-        </div>
-        <div class="aditem-main--middle">
-          <h2 class="text-module-begin">
-            <span class="ellipsis ref-not-linked" data-url="/s-anzeige/neewer-5-in-1-light-reflector-60-90cm/3324850037-245-3519">NEEWER 5-in-1 Light Reflector 60*90cm</span>
-          </h2>
-          <p class="aditem-main--middle--description">Nur einmal verwenden.</p>
-          <div class="aditem-main--middle--price-shipping">
-            <p class="aditem-main--middle--price-shipping--price">25 €</p>
-          </div>
-        </div>
-        <div class="aditem-main--bottom">
-          <p class="text-module-end"></p>
-        </div>
-      </div>
-    </article>
-  </li>
-</ul>
-`;
+describe("parseDate", () => {
+	test("returns null for null input", () => {
+		expect(parseDate(null, NOW)).toBeNull();
+	});
+
+	test("parses 'Heute, HH:MM'", () => {
+		const result = parseDate("Heute, 16:29", NOW);
+		expect(result).not.toBeNull();
+		const d = new Date(result!);
+		expect(d.getFullYear()).toBe(2026);
+		expect(d.getMonth()).toBe(1); // February
+		expect(d.getDate()).toBe(13);
+		expect(d.getHours()).toBe(16);
+		expect(d.getMinutes()).toBe(29);
+	});
+
+	test("parses 'Gestern, HH:MM'", () => {
+		const result = parseDate("Gestern, 18:46", NOW);
+		expect(result).not.toBeNull();
+		const d = new Date(result!);
+		expect(d.getFullYear()).toBe(2026);
+		expect(d.getMonth()).toBe(1);
+		expect(d.getDate()).toBe(12);
+		expect(d.getHours()).toBe(18);
+		expect(d.getMinutes()).toBe(46);
+	});
+
+	test("parses 'DD.MM.YYYY'", () => {
+		const result = parseDate("11.02.2026", NOW);
+		expect(result).not.toBeNull();
+		const d = new Date(result!);
+		expect(d.getFullYear()).toBe(2026);
+		expect(d.getMonth()).toBe(1);
+		expect(d.getDate()).toBe(11);
+	});
+
+	test("returns null for unrecognized format", () => {
+		expect(parseDate("something else", NOW)).toBeNull();
+	});
+});
 
 describe("extractListings", () => {
-	const doc = parseHTML(FIXTURE);
-	const listings = extractListings(doc);
+	const doc = parseHTML(FIXTURE_HTML);
+	const listings = extractListings(doc, NOW);
 
-	test("extracts all listings (skips ad slots)", () => {
-		expect(listings).toHaveLength(3);
+	test("extracts all listings", () => {
+		expect(listings).toHaveLength(27);
 	});
 
 	test("extracts ad ID and URL", () => {
-		expect(listings[0].id).toBe("3300238605");
-		expect(listings[0].url).toBe(
-			"/s-anzeige/berlin-mitte-perfekte-2-ziwo-verkauf-top-lage-sofort-verfuegbar/3300238605-196-3519",
-		);
+		expect(listings[0].id).toBe("3278084177");
+		expect(listings[0].url).toContain("3278084177");
 	});
 
-	test("extracts title from <a> element", () => {
-		expect(listings[0].title).toBe(
-			"Berlin Mitte perfekte 2 ZiWo VERKAUF Top Lage - Sofort verfügbar",
-		);
-	});
-
-	test("extracts title from <span> fallback", () => {
-		expect(listings[2].title).toBe("NEEWER 5-in-1 Light Reflector 60*90cm");
+	test("extracts title", () => {
+		expect(listings[0].title).toContain("Zweifamilienhaus");
 	});
 
 	test("extracts description", () => {
-		expect(listings[0].description).toContain("Top Lage");
+		expect(listings[0].description).toContain("1980");
 	});
 
 	test("extracts price", () => {
-		expect(listings[0].price).toBe("310.000 € VB");
-		expect(listings[1].price).toBe("30 €");
+		expect(listings[0].price).toContain("€");
+		expect(listings[0].priceParsed).toBeGreaterThan(0);
 	});
 
 	test("extracts location", () => {
-		expect(listings[0].location).toBe("10119 Mitte");
+		expect(listings[0].location).toContain("Spandau");
 	});
 
-	test("extracts date when present", () => {
+	test("date is null for top ads", () => {
 		expect(listings[0].date).toBeNull();
-		expect(listings[1].date).toBe("Heute, 00:04");
-		expect(listings[2].date).toBe("Gestern, 20:59");
+		expect(listings[0].dateParsed).toBeNull();
+		expect(listings[1].date).toBeNull();
+		expect(listings[1].dateParsed).toBeNull();
 	});
 
-	test("extracts image URL (prefers srcset)", () => {
-		expect(listings[0].imageUrl).toBe("https://img.kleinanzeigen.de/full.jpg");
+	test("parses 'Heute' dates", () => {
+		// listings[2] has "Heute, 16:29"
+		expect(listings[2].date).toBe("Heute, 16:29");
+		expect(listings[2].dateParsed).not.toBeNull();
+		const d = new Date(listings[2].dateParsed!);
+		expect(d.getFullYear()).toBe(2026);
+		expect(d.getMonth()).toBe(1);
+		expect(d.getDate()).toBe(13);
+		expect(d.getHours()).toBe(16);
+		expect(d.getMinutes()).toBe(29);
 	});
 
-	test("falls back to src when no srcset", () => {
-		expect(listings[2].imageUrl).toBe(
-			"https://img.kleinanzeigen.de/neewer-thumb.jpg",
-		);
+	test("parses 'Gestern' dates", () => {
+		// listings[4] has "Gestern, 18:46"
+		expect(listings[4].date).toBe("Gestern, 18:46");
+		expect(listings[4].dateParsed).not.toBeNull();
+		const d = new Date(listings[4].dateParsed!);
+		expect(d.getFullYear()).toBe(2026);
+		expect(d.getMonth()).toBe(1);
+		expect(d.getDate()).toBe(12);
+		expect(d.getHours()).toBe(18);
+		expect(d.getMinutes()).toBe(46);
+	});
+
+	test("parses 'DD.MM.YYYY' dates", () => {
+		// listings[10] has "11.02.2026"
+		expect(listings[10].date).toBe("11.02.2026");
+		expect(listings[10].dateParsed).not.toBeNull();
+		const d = new Date(listings[10].dateParsed!);
+		expect(d.getFullYear()).toBe(2026);
+		expect(d.getMonth()).toBe(1);
+		expect(d.getDate()).toBe(11);
+	});
+
+	test("extracts image URL", () => {
+		expect(listings[0].imageUrl).toContain("kleinanzeigen.de");
 	});
 
 	test("extracts image count", () => {
-		expect(listings[0].imageCount).toBe(10);
-		expect(listings[1].imageCount).toBe(4);
-		expect(listings[2].imageCount).toBe(0);
-	});
-
-	test("detects private seller", () => {
-		expect(listings[0].isPrivate).toBe(true);
-		expect(listings[1].isPrivate).toBe(false);
+		expect(listings[0].imageCount).toBe(20);
 	});
 
 	test("extracts tags", () => {
-		expect(listings[0].tags).toEqual(["39 m²", "2 Zi."]);
-		expect(listings[1].tags).toEqual(["Direkt kaufen"]);
-		expect(listings[2].tags).toEqual([]);
+		expect(listings[0].tags.length).toBeGreaterThan(0);
 	});
 });

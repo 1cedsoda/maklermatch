@@ -39,6 +39,7 @@ export const listingAbstractSnapshotSchema = z.object({
 	location: z.string().nullable(),
 	distance: z.string().nullable(),
 	date: z.string().nullable(),
+	dateParsed: z.string().nullable(),
 	imageUrl: z.string().nullable(),
 	imageCount: z.number(),
 	isPrivate: z.boolean(),

@@ -10,6 +10,7 @@ export interface KleinanzeigenListing {
 	location: string | null;
 	distance: string | null;
 	date: string | null;
+	dateParsed: string | null;
 	imageUrl: string | null;
 	imageCount: number;
 	isPrivate: boolean;
@@ -43,13 +44,48 @@ function parseLocation(raw: string | null): {
 	return { location: normalized, distance: null };
 }
 
+export function parseDate(
+	raw: string | null,
+	now: Date = new Date(),
+): string | null {
+	if (!raw) return null;
+	const normalized = raw.replace(/\s+/g, " ").trim();
+
+	const heuteMatch = normalized.match(/^Heute,\s*(\d{1,2}):(\d{2})$/);
+	if (heuteMatch) {
+		const d = new Date(now);
+		d.setHours(Number(heuteMatch[1]), Number(heuteMatch[2]), 0, 0);
+		return d.toISOString();
+	}
+
+	const gesternMatch = normalized.match(/^Gestern,\s*(\d{1,2}):(\d{2})$/);
+	if (gesternMatch) {
+		const d = new Date(now);
+		d.setDate(d.getDate() - 1);
+		d.setHours(Number(gesternMatch[1]), Number(gesternMatch[2]), 0, 0);
+		return d.toISOString();
+	}
+
+	const dateMatch = normalized.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+	if (dateMatch) {
+		const d = new Date(
+			Number(dateMatch[3]),
+			Number(dateMatch[2]) - 1,
+			Number(dateMatch[1]),
+		);
+		return d.toISOString();
+	}
+
+	return null;
+}
+
 function ensureAbsoluteUrl(url: string): string {
 	if (!url) return url;
 	if (url.startsWith("http")) return url;
 	return `https://www.kleinanzeigen.de${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
-function extractArticle(article: Element): KleinanzeigenListing {
+function extractArticle(article: Element, now?: Date): KleinanzeigenListing {
 	const id = article.getAttribute("data-adid") || "";
 	const url = ensureAbsoluteUrl(article.getAttribute("data-href") || "");
 
@@ -72,6 +108,7 @@ function extractArticle(article: Element): KleinanzeigenListing {
 
 	const dateEl = article.querySelector(".aditem-main--top--right");
 	const date = normalize(dateEl?.textContent);
+	const dateParsed = parseDate(date, now);
 
 	const imgEl = article.querySelector(".imagebox img");
 	const imageUrl =
@@ -99,6 +136,7 @@ function extractArticle(article: Element): KleinanzeigenListing {
 		location,
 		distance,
 		date,
+		dateParsed,
 		imageUrl,
 		imageCount,
 		isPrivate,
@@ -107,9 +145,12 @@ function extractArticle(article: Element): KleinanzeigenListing {
 	};
 }
 
-export function extractListings(doc: Document): KleinanzeigenListing[] {
+export function extractListings(
+	doc: Document,
+	now?: Date,
+): KleinanzeigenListing[] {
 	const articles = doc.querySelectorAll("article.aditem");
-	return Array.from(articles).map(extractArticle);
+	return Array.from(articles).map((article) => extractArticle(article, now));
 }
 
 export async function scrapeListings(
@@ -147,6 +188,31 @@ export async function scrapeListings(
 			return `https://www.kleinanzeigen.de${u.startsWith("/") ? "" : "/"}${u}`;
 		}
 
+		function parseDt(raw: string | null): string | null {
+			if (!raw) return null;
+			const n = raw.replace(/\s+/g, " ").trim();
+			const now = new Date();
+			const h = n.match(/^Heute,\s*(\d{1,2}):(\d{2})$/);
+			if (h) {
+				const d = new Date(now);
+				d.setHours(Number(h[1]), Number(h[2]), 0, 0);
+				return d.toISOString();
+			}
+			const g = n.match(/^Gestern,\s*(\d{1,2}):(\d{2})$/);
+			if (g) {
+				const d = new Date(now);
+				d.setDate(d.getDate() - 1);
+				d.setHours(Number(g[1]), Number(g[2]), 0, 0);
+				return d.toISOString();
+			}
+			const dm = n.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+			if (dm) {
+				const d = new Date(Number(dm[3]), Number(dm[2]) - 1, Number(dm[1]));
+				return d.toISOString();
+			}
+			return null;
+		}
+
 		const articles = document.querySelectorAll("article.aditem");
 		return Array.from(articles).map((article) => {
 			const id = article.getAttribute("data-adid") || "";
@@ -166,6 +232,7 @@ export async function scrapeListings(
 			const { location, distance } = parseLoc(locationEl?.textContent ?? null);
 			const dateEl = article.querySelector(".aditem-main--top--right");
 			const date = norm(dateEl?.textContent);
+			const dateParsed = parseDt(date);
 			const imgEl = article.querySelector(".imagebox img");
 			const imageUrl =
 				imgEl?.getAttribute("srcset") || imgEl?.getAttribute("src") || null;
@@ -187,6 +254,7 @@ export async function scrapeListings(
 				location,
 				distance,
 				date,
+				dateParsed,
 				imageUrl,
 				imageCount,
 				isPrivate,
