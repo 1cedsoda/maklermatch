@@ -1,7 +1,6 @@
 import {
 	IDENTITY,
 	STYLE_RULES,
-	OUTREACH_DONTS,
 	TASK_INITIAL,
 	TASK_FOLLOWUP_1,
 	TASK_FOLLOWUP_2,
@@ -40,13 +39,7 @@ function buildSystemPrompt(
 	persona: MessagePersona,
 ): string {
 	const vorname = persona.name.split(" ")[0];
-	const parts = [
-		IDENTITY,
-		STYLE_RULES,
-		OUTREACH_DONTS,
-		toneInstruction,
-		task,
-	].join("\n\n");
+	const parts = [IDENTITY, STYLE_RULES, toneInstruction, task].join("\n\n");
 	return injectPersona(parts, vorname, persona.firma);
 }
 
