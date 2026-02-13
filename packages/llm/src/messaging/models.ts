@@ -23,15 +23,6 @@ export enum PriceAssessment {
 	UNKNOWN = "unknown",
 }
 
-export enum MessageVariant {
-	DIRECT_HONEST = "A",
-	MARKET_INSIGHT = "B",
-	BUYER_MATCH = "C",
-	NEIGHBORHOOD_PRO = "D",
-	SHARP_SHORT = "E",
-	VALUE_ADD = "F",
-}
-
 export enum ReplySentiment {
 	POSITIVE_OPEN = "positiv_offen",
 	POSITIVE_SHORT = "positiv_kurz",
@@ -79,6 +70,7 @@ export interface ListingSignals {
 	locationQualityHints: string[];
 	amenities: string[];
 
+	sellerName: string;
 	sellerEmotion: SellerEmotion;
 	descriptionEffort: DescriptionEffort;
 	tone: Tone;
@@ -117,6 +109,7 @@ export function createListingSignals(
 		infrastructure: [],
 		locationQualityHints: [],
 		amenities: [],
+		sellerName: "",
 		sellerEmotion: SellerEmotion.NEUTRAL,
 		descriptionEffort: DescriptionEffort.MEDIUM,
 		tone: Tone.SIE,
@@ -125,18 +118,39 @@ export function createListingSignals(
 	};
 }
 
+// --- Pre-Screening Gate ---
+
+export type GateRejectionType = "kriterien_mismatch" | "llm_rejection";
+
+export interface GateResult {
+	passed: boolean;
+	rejectionType: GateRejectionType | null;
+	rejectionReason: string | null;
+	details: string[];
+}
+
+export interface BrokerCriteria {
+	minPrice?: number;
+	maxPrice?: number;
+	propertyTypes?: string[];
+	plzPrefixes?: string[];
+	cities?: string[];
+	bundeslaender?: string[];
+	minWohnflaeche?: number;
+	maxWohnflaeche?: number;
+	minZimmer?: number;
+}
+
 export interface PersonalizationResult {
 	primaryAnchor: string;
 	secondaryAnchors: string[];
 	tone: Tone;
-	recommendedVariants: MessageVariant[];
 	priceInsight: string | null;
 	emotionalHook: string | null;
 }
 
 export interface Message {
 	text: string;
-	variant: MessageVariant;
 	listingId: string;
 	listingUrl: string;
 	generatedAt: Date;
@@ -148,7 +162,6 @@ export interface Message {
 
 export function createMessage(
 	text: string,
-	variant: MessageVariant,
 	listingId: string,
 	opts: Partial<
 		Pick<
@@ -163,7 +176,6 @@ export function createMessage(
 ): Message {
 	return {
 		text,
-		variant,
 		listingId,
 		listingUrl: opts.listingUrl ?? "",
 		generatedAt: new Date(),

@@ -12,6 +12,7 @@ import {
 export interface DelayResult {
 	delayMs: number;
 	reason: string;
+	testMode: boolean;
 }
 
 export class DelayCalculator {
@@ -26,49 +27,32 @@ export class DelayCalculator {
 		messageLength: number,
 		isFirstInConversation: boolean,
 	): DelayResult {
-		let result: DelayResult;
+		let delayMs: number;
+		let reason: string;
 
 		if (isFirstInConversation) {
-			result = {
-				delayMs: this.randomBetween(
-					FIRST_MESSAGE_DELAY_MIN,
-					FIRST_MESSAGE_DELAY_MAX,
-				),
-				reason: "first_message",
-			};
+			delayMs = this.randomBetween(
+				FIRST_MESSAGE_DELAY_MIN,
+				FIRST_MESSAGE_DELAY_MAX,
+			);
+			reason = "first_message";
 		} else if (!this.active) {
-			// Not yet "online" -- similar to first message but shorter
-			result = {
-				delayMs: this.randomBetween(
-					FIRST_MESSAGE_DELAY_MIN,
-					FIRST_MESSAGE_DELAY_MAX / 2,
-				),
-				reason: "not_active",
-			};
+			delayMs = this.randomBetween(
+				FIRST_MESSAGE_DELAY_MIN,
+				FIRST_MESSAGE_DELAY_MAX / 2,
+			);
+			reason = "not_active";
 		} else if (Math.random() < AFK_PROBABILITY) {
-			// Occasional "stepped away" pause
-			result = {
-				delayMs: this.randomBetween(AFK_DELAY_MIN, AFK_DELAY_MAX),
-				reason: "afk",
-			};
+			delayMs = this.randomBetween(AFK_DELAY_MIN, AFK_DELAY_MAX);
+			reason = "afk";
 		} else {
-			// Online -- fast reply, scaled by message length
 			const typingMs = (messageLength / CHARS_PER_SECOND) * 1000;
 			const baseDelay = this.randomBetween(ONLINE_DELAY_MIN, ONLINE_DELAY_MAX);
-			result = {
-				delayMs: Math.round(baseDelay + typingMs * 0.3),
-				reason: "online",
-			};
+			delayMs = Math.round(baseDelay + typingMs * 0.3);
+			reason = "online";
 		}
 
-		if (this.testMode) {
-			return {
-				delayMs: 0,
-				reason: `${result.reason} (test_mode: ${result.delayMs}ms)`,
-			};
-		}
-
-		return result;
+		return { delayMs, reason, testMode: this.testMode };
 	}
 
 	markActive(): void {

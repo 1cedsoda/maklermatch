@@ -38,8 +38,14 @@ try {
 }
 
 export class ListingAnalyzer {
-	analyze(rawText: string, listingId = "", listingUrl = ""): ListingSignals {
+	analyze(
+		rawText: string,
+		listingId = "",
+		listingUrl = "",
+		sellerName = "",
+	): ListingSignals {
 		const s = createListingSignals(rawText, listingId, listingUrl);
+		s.sellerName = sellerName;
 
 		this.extractTitle(s);
 		this.extractPrice(s);

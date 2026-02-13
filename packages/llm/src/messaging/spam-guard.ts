@@ -1,3 +1,4 @@
+import { QUALITY_CHECK } from "@scraper/agent";
 import {
 	FORBIDDEN_OPENERS,
 	FORBIDDEN_PHRASES,
@@ -36,6 +37,7 @@ export class SpamGuard {
 		reasons.push(...this.checkStructure(message));
 		reasons.push(...this.checkPersonalization(message, signals));
 		reasons.push(...this.checkSelfFocus(message));
+		reasons.push(...this.checkSellerName(message, signals));
 
 		if (reasons.length > 0) {
 			return { passed: false, score: 0, rejectionReasons: reasons };
@@ -126,6 +128,18 @@ export class SpamGuard {
 			reasons.push("Enthält URL -- nicht erlaubt");
 		}
 
+		// Check for all-lowercase style (no uppercase letters at all or only at very start)
+		const sentences = message.split(/[.!?]\s+/);
+		const lowercaseSentences = sentences.filter(
+			(s) =>
+				s.length > 3 && s[0] === s[0].toLowerCase() && /[a-zäöü]/.test(s[0]),
+		);
+		if (lowercaseSentences.length >= 2) {
+			reasons.push(
+				"Kleinbuchstaben-Stil: Satzanfänge müssen großgeschrieben werden",
+			);
+		}
+
 		if (message.includes("\u2014") || message.includes("\u2013")) {
 			reasons.push("Em-dash/en-dash gefunden (AI-Tell)");
 		}
@@ -214,22 +228,23 @@ export class SpamGuard {
 		return [];
 	}
 
+	private checkSellerName(message: string, signals: ListingSignals): string[] {
+		if (!signals.sellerName) return [];
+
+		const firstName = signals.sellerName.split(/\s+/)[0];
+
+		if (message.includes(firstName)) {
+			return [];
+		}
+
+		return [
+			`Verkäufername "${firstName}" fehlt. Sprich den Verkäufer mit Namen an.`,
+		];
+	}
+
 	private async llmQualityCheck(message: string): Promise<number> {
-		const systemPrompt = `\
-Du bist ein privater Immobilienverkäufer auf Kleinanzeigen. Du bekommst regelmäßig \
-Nachrichten von Maklern -- die meisten sind generische Copy-Paste-Templates die du ignorierst.
-
-Bewerte diese Nachricht auf einer Skala von 1-10:
-- 1-3: Generisches Makler-Template, offensichtlicher Sales-Pitch, würde ich ignorieren
-- 4-5: Irgendein Makler, aber nichts Besonderes -- wahrscheinlich ignorieren
-- 6-7: Klingt echt, hat was Spezifisches zu meiner Immobilie gesagt -- könnte antworten
-- 8-10: Klingt wie ein normaler Mensch der zufällig Makler ist, hat mir was Nützliches \
-gesagt oder mich neugierig gemacht -- würde antworten
-
-Antworte NUR mit der Zahl (1-10), nichts weiter.`;
-
 		try {
-			const response = await this.llm!.generate(systemPrompt, message);
+			const response = await this.llm!.generate(QUALITY_CHECK, message);
 			const match = response.trim().match(/\b(\d+)\b/);
 			if (match) {
 				const score = Number.parseInt(match[1]);

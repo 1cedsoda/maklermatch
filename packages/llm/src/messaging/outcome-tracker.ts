@@ -1,18 +1,6 @@
+import { SENTIMENT } from "@scraper/agent";
 import { ReplySentiment } from "./models";
 import type { LLMClient } from "./message-generator";
-
-const SENTIMENT_PROMPT = `\
-Klassifiziere diese Antwort eines Immobilienverkäufers auf Kleinanzeigen.
-Die Antwort kam auf eine Erstansprache-Nachricht von uns.
-
-Kategorien:
-- positiv_offen: Freundlich, beantwortet die Frage, offen für Gespräch
-- positiv_kurz: Kurze aber freundliche Antwort (z.B. "Ja", "Danke für die Info")
-- neutral: Beantwortet die Frage ohne besondere Wärme oder Ablehnung
-- negativ_ablehnend: Kein Interesse, höfliche Ablehnung
-- negativ_aggressiv: Verärgert, Spam-Vorwurf, droht mit Meldung, beleidigend
-
-Antworte NUR mit einer der Kategorien (z.B. "positiv_offen"), nichts weiter.`;
 
 const NEGATIVE_AGGRESSIVE_KEYWORDS = [
 	"spam",
@@ -69,7 +57,7 @@ export class OutcomeTracker {
 
 	private async classifyWithLlm(replyText: string): Promise<ReplySentiment> {
 		try {
-			const response = (await this.llm!.generate(SENTIMENT_PROMPT, replyText))
+			const response = (await this.llm!.generate(SENTIMENT, replyText))
 				.trim()
 				.toLowerCase();
 

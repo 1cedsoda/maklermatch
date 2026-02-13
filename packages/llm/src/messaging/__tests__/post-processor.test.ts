@@ -10,21 +10,21 @@ describe("PostProcessor", () => {
 			const result = pp.process(input);
 			expect(result).not.toContain("\u2014");
 			expect(result).not.toContain("--");
-			expect(result).toContain("Das ist toll, wirklich gut");
+			expect(result).toMatch(/Das ist toll,\s?wirklich gut/);
 		});
 
 		test("removes en-dash as stylistic device", () => {
 			const input = "Das Haus \u2013 ein Traum";
 			const result = pp.process(input);
 			expect(result).not.toContain("\u2013");
-			expect(result).toContain("Das Haus, ein Traum");
+			expect(result).toMatch(/Das Haus,\s?ein Traum/);
 		});
 
 		test("removes double-dash Gedankenstrich", () => {
 			const input = "Das ist toll -- wirklich gut";
 			const result = pp.process(input);
 			expect(result).not.toMatch(/\s--\s/);
-			expect(result).toContain("Das ist toll, wirklich gut");
+			expect(result).toMatch(/Das ist toll,\s?wirklich gut/);
 		});
 
 		test("removes multiple dashes in one text", () => {

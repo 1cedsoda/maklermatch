@@ -3,7 +3,6 @@ export {
 	SellerEmotion,
 	DescriptionEffort,
 	PriceAssessment,
-	MessageVariant,
 	ReplySentiment,
 	FollowUpStage,
 	createListingSignals,
@@ -16,9 +15,13 @@ export type {
 	PersonalizationResult,
 	Message,
 	ConversationState,
+	BrokerCriteria,
+	GateRejectionType,
+	GateResult,
 } from "./models";
 
 export { ListingAnalyzer } from "./listing-analyzer";
+export { ListingGate } from "./listing-gate";
 export { PersonalizationEngine } from "./personalization";
 export { SpamGuard } from "./spam-guard";
 export type { ValidationResult } from "./spam-guard";
@@ -34,6 +37,17 @@ export { DelayCalculator } from "./delay-calculator";
 export type { DelayResult } from "./delay-calculator";
 export { FollowUpEngine } from "./followup-engine";
 export { OutcomeTracker } from "./outcome-tracker";
+export { TimeWindow, TimePeriod } from "./time-window";
+export type { TimeAdjustment } from "./time-window";
+export { InMemoryJobStore, JobStatus } from "./job-store";
+export type { JobStore, ScheduledJob } from "./job-store";
+export { ReplyScheduler } from "./reply-scheduler";
+export type {
+	NewMessageChecker,
+	MessageSender,
+	ConversationContext,
+	ScheduleResult,
+} from "./reply-scheduler";
 export type { MessagePersona } from "./templates";
 export {
 	buildListingContext,

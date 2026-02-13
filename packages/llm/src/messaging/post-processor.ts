@@ -52,20 +52,14 @@ export class PostProcessor {
 	 * Types of errors:
 	 * - Letter swap in a common word
 	 * - Missing space after comma
-	 * - Lowercase at sentence start (after first sentence)
 	 */
 	private humanize(text: string): string {
 		if (Math.random() > TYPO_PROBABILITY) return text;
 
-		const roll = Math.random();
-
-		if (roll < 0.5) {
+		if (Math.random() < 0.6) {
 			return this.swapLetters(text);
 		}
-		if (roll < 0.75) {
-			return this.removeSpaceAfterComma(text);
-		}
-		return this.lowercaseSentenceStart(text);
+		return this.removeSpaceAfterComma(text);
 	}
 
 	private swapLetters(text: string): string {
@@ -94,18 +88,5 @@ export class PostProcessor {
 
 		const pos = positions[Math.floor(Math.random() * positions.length)];
 		return text.slice(0, pos + 1) + text.slice(pos + 2);
-	}
-
-	private lowercaseSentenceStart(text: string): string {
-		// Find second sentence or later and lowercase its first letter
-		const match = text.match(/[.!?]\s+([A-ZÄÖÜ])/);
-		if (!match || match.index === undefined) return text;
-
-		const charPos = match.index + match[0].length - 1;
-		return (
-			text.slice(0, charPos) +
-			text[charPos].toLowerCase() +
-			text.slice(charPos + 1)
-		);
 	}
 }

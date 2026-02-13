@@ -27,12 +27,18 @@ describe("DelayCalculator", () => {
 		expect(maxOnline).toBeLessThan(120_000);
 	});
 
-	test("test mode returns 0 delay but preserves reason info", () => {
+	test("test mode computes real delay and sets testMode flag", () => {
 		const calc = new DelayCalculator({ testMode: true });
 		const result = calc.calculate(100, true);
-		expect(result.delayMs).toBe(0);
-		expect(result.reason).toContain("first_message");
-		expect(result.reason).toContain("test_mode");
+		expect(result.delayMs).toBeGreaterThanOrEqual(120_000);
+		expect(result.reason).toBe("first_message");
+		expect(result.testMode).toBe(true);
+	});
+
+	test("non-test mode sets testMode flag to false", () => {
+		const calc = new DelayCalculator();
+		const result = calc.calculate(100, true);
+		expect(result.testMode).toBe(false);
 	});
 
 	test("markActive changes state", () => {

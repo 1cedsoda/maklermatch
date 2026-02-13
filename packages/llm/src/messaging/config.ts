@@ -5,9 +5,9 @@ export const MAX_DELAY_SECONDS = 600; // 10 minutes
 export const MAX_FOLLOWUPS_PER_SELLER = 2; // + 1 initial = 3 total
 
 // --- Message Constraints ---
-export const MAX_WORDS = 100;
-export const TARGET_WORDS_MIN = 50;
-export const TARGET_WORDS_MAX = 80;
+export const MAX_WORDS = 60;
+export const TARGET_WORDS_MIN = 25;
+export const TARGET_WORDS_MAX = 50;
 export const MAX_EXCLAMATION_MARKS = 1;
 export const MAX_QUESTION_MARKS = 1; // Exactly 1 CTA question
 
@@ -82,6 +82,16 @@ export const FORBIDDEN_PHRASES = [
 	"ohne Verpflichtung",
 	"keinerlei Kosten",
 	"keine Kosten für Sie",
+	// Fake buyer claims
+	"hab einen Kunden",
+	"habe einen Kunden",
+	"hab einen Interessenten",
+	"habe einen Interessenten",
+	"hab gerade einen",
+	"hab grad einen",
+	"Suchkunden",
+	"genau sowas sucht",
+	"genau so etwas sucht",
 	// Pressure tactics
 	"Zeitfenster schließt sich",
 	"der Markt dreht",
@@ -206,6 +216,28 @@ export const AFK_DELAY_MIN = 60_000; // 1 min
 export const AFK_DELAY_MAX = 180_000; // 3 min
 export const AFK_PROBABILITY = 0.15; // 15% chance of "stepped away"
 export const CHARS_PER_SECOND = 4; // typing speed for delay scaling
+
+// --- Chat Window ---
+export const CHAT_WINDOW_START_HOUR = 7;
+export const CHAT_WINDOW_START_MINUTE = 22;
+export const CHAT_WINDOW_END_HOUR = 24; // midnight
+export const BUSINESS_HOURS_START = 9;
+export const BUSINESS_HOURS_END = 17;
+
+// --- Off-Hours (weekday outside 9-17) ---
+export const OFF_HOURS_DELAY_MULTIPLIER_MIN = 3;
+export const OFF_HOURS_DELAY_MULTIPLIER_MAX = 8;
+export const OFF_HOURS_SKIP_PROBABILITY = 0.1; // 10% no reply
+
+// --- Weekend (Sat + Sun) ---
+export const WEEKEND_DELAY_MULTIPLIER_MIN = 5;
+export const WEEKEND_DELAY_MULTIPLIER_MAX = 15;
+export const WEEKEND_SKIP_PROBABILITY = 0.2; // 20% no reply
+
+// --- Scheduler ---
+export const SCHEDULER_POLL_INTERVAL_MS = 30_000; // 30s
+export const MAX_INTERRUPTION_RESETS = 3;
+export const JOB_PERSIST_THRESHOLD_MS = 300_000; // 5 min
 
 // --- Safeguard ---
 export const SAFEGUARD_ENABLED = true;

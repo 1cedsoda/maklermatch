@@ -2,11 +2,13 @@ import { createHash } from "crypto";
 import { MAX_GENERATION_RETRIES } from "./config";
 import { DelayCalculator } from "./delay-calculator";
 import { ListingAnalyzer } from "./listing-analyzer";
+import { ListingGate } from "./listing-gate";
 import {
+	type BrokerCriteria,
+	type GateResult,
 	type ListingSignals,
 	type Message,
 	FollowUpStage,
-	MessageVariant,
 	createMessage,
 } from "./models";
 import { PersonalizationEngine } from "./personalization";
@@ -29,6 +31,7 @@ export interface MessageResult {
 	message: Message | null;
 	skipped: boolean;
 	delayMs: number;
+	gateResult?: GateResult;
 }
 
 export class MessageGenerationError extends Error {}
@@ -37,77 +40,114 @@ export class MessageGenerator {
 	private llm: LLMClient;
 	private analyzer = new ListingAnalyzer();
 	private personalizer = new PersonalizationEngine();
+	private gate: ListingGate;
 	private spamGuard: SpamGuard;
 	private postProcessor = new PostProcessor();
 	private safeguard: Safeguard;
 	private delay: DelayCalculator;
 	private persona?: MessagePersona;
+	private brokerCriteria?: BrokerCriteria;
 	private sentHashes = new Set<string>();
 
 	constructor(
 		llmClient: LLMClient,
-		opts: { testMode?: boolean; persona?: MessagePersona } = {},
+		opts: {
+			testMode?: boolean;
+			persona?: MessagePersona;
+			brokerCriteria?: BrokerCriteria;
+		} = {},
 	) {
 		this.llm = llmClient;
+		this.gate = new ListingGate(llmClient);
 		this.spamGuard = new SpamGuard(llmClient);
 		this.safeguard = new Safeguard(llmClient);
 		this.delay = new DelayCalculator({ testMode: opts.testMode });
 		this.persona = opts.persona;
+		this.brokerCriteria = opts.brokerCriteria;
 	}
 
 	async generate(
 		rawListingText: string,
 		listingId = "",
 		listingUrl = "",
-		variant?: MessageVariant,
+		sellerName = "",
 	): Promise<MessageResult> {
 		const signals = this.analyzer.analyze(
 			rawListingText,
 			listingId,
 			listingUrl,
+			sellerName,
 		);
-		const personalization = this.personalizer.personalize(signals);
 
-		if (!variant) {
-			variant = personalization.recommendedVariants[0];
+		const gateResult = await this.gate.check(signals, this.brokerCriteria);
+		if (!gateResult.passed) {
+			console.info(
+				`Listing ${listingId} rejected by gate: [${gateResult.rejectionType}] ${gateResult.rejectionReason}`,
+			);
+			return { message: null, skipped: true, delayMs: 0, gateResult };
 		}
 
-		return this.generateWithRetries(signals, personalization, variant, true);
-	}
-
-	async generateAllVariants(
-		rawListingText: string,
-		listingId = "",
-		listingUrl = "",
-	): Promise<Map<MessageVariant, MessageResult>> {
-		const signals = this.analyzer.analyze(
-			rawListingText,
-			listingId,
-			listingUrl,
-		);
 		const personalization = this.personalizer.personalize(signals);
 
-		const results = new Map<MessageVariant, MessageResult>();
-		for (const v of Object.values(MessageVariant)) {
-			try {
-				const result = await this.generateWithRetries(
-					signals,
-					personalization,
-					v as MessageVariant,
-					true,
-				);
-				results.set(v as MessageVariant, result);
-			} catch (e) {
-				if (e instanceof MessageGenerationError) {
-					console.warn(
-						`Variant ${v} failed all retries for listing ${listingId}`,
-					);
-				} else {
-					throw e;
+		let [systemPrompt, userPrompt] = buildGenerationPrompt(
+			signals,
+			personalization,
+			this.persona,
+		);
+
+		for (let attempt = 1; attempt <= MAX_GENERATION_RETRIES + 1; attempt++) {
+			const rawMessage = this.cleanMessage(
+				(await this.llm.generate(systemPrompt, userPrompt)).trim(),
+			);
+
+			if (this.isSkip(rawMessage)) {
+				console.info(`Listing ${listingId} skipped by agent decision`);
+				const delayResult = this.delay.calculate(0, true);
+				return { message: null, skipped: true, delayMs: delayResult.delayMs };
+			}
+
+			const processed = this.postProcessor.process(rawMessage);
+			const validation = await this.spamGuard.validate(processed, signals);
+
+			if (validation.passed && !this.isDuplicate(processed)) {
+				const safeguardResult = await this.safeguard.check(processed);
+				if (!safeguardResult.passed) {
+					if (attempt <= MAX_GENERATION_RETRIES) {
+						userPrompt +=
+							`\n\nVORHERIGER VERSUCH ABGELEHNT: ${safeguardResult.reason}` +
+							"\nBitte korrigiere diese Probleme.";
+						console.info(
+							`Attempt ${attempt} rejected by safeguard: ${safeguardResult.reason}`,
+						);
+						continue;
+					}
 				}
+
+				this.sentHashes.add(this.hash(processed));
+				this.delay.markActive();
+				const delayResult = this.delay.calculate(processed.length, true);
+
+				const message = createMessage(processed, listingId, {
+					listingUrl: signals.listingUrl,
+					spamGuardScore: validation.score,
+					generationAttempt: attempt,
+				});
+				return { message, skipped: false, delayMs: delayResult.delayMs };
+			}
+
+			if (attempt <= MAX_GENERATION_RETRIES) {
+				userPrompt +=
+					`\n\nVORHERIGER VERSUCH ABGELEHNT: ${validation.rejectionReasons.join("; ")}` +
+					"\nBitte korrigiere diese Probleme.";
+				console.info(
+					`Attempt ${attempt} rejected: ${validation.rejectionReasons.join("; ")}`,
+				);
 			}
 		}
-		return results;
+
+		throw new MessageGenerationError(
+			`Generation failed after ${MAX_GENERATION_RETRIES + 1} attempts for listing ${listingId}`,
+		);
 	}
 
 	async generateFollowup(
@@ -115,6 +155,7 @@ export class MessageGenerator {
 		stage: FollowUpStage,
 		listingId = "",
 		listingUrl = "",
+		sellerName = "",
 	): Promise<MessageResult> {
 		if (
 			stage !== FollowUpStage.FOLLOWUP_1 &&
@@ -127,7 +168,17 @@ export class MessageGenerator {
 			rawListingText,
 			listingId,
 			listingUrl,
+			sellerName,
 		);
+
+		const gateResult = await this.gate.check(signals, this.brokerCriteria);
+		if (!gateResult.passed) {
+			console.info(
+				`Follow-up for ${listingId} rejected by gate: [${gateResult.rejectionType}] ${gateResult.rejectionReason}`,
+			);
+			return { message: null, skipped: true, delayMs: 0, gateResult };
+		}
+
 		const stageNum = stage === FollowUpStage.FOLLOWUP_1 ? 1 : 2;
 
 		let [systemPrompt, userPrompt] = buildFollowupPrompt(
@@ -147,7 +198,6 @@ export class MessageGenerator {
 				return { message: null, skipped: true, delayMs: delayResult.delayMs };
 			}
 
-			// Pipeline: PostProcess → SpamGuard → Safeguard
 			const processed = this.postProcessor.process(rawMessage);
 			const validation = await this.spamGuard.validate(processed, signals);
 
@@ -169,17 +219,12 @@ export class MessageGenerator {
 				this.delay.markActive();
 				const delayResult = this.delay.calculate(processed.length, false);
 
-				const message = createMessage(
-					processed,
-					MessageVariant.DIRECT_HONEST,
-					listingId,
-					{
-						listingUrl,
-						spamGuardScore: validation.score,
-						generationAttempt: attempt,
-						stage,
-					},
-				);
+				const message = createMessage(processed, listingId, {
+					listingUrl,
+					spamGuardScore: validation.score,
+					generationAttempt: attempt,
+					stage,
+				});
 				return { message, skipped: false, delayMs: delayResult.delayMs };
 			}
 
@@ -198,87 +243,13 @@ export class MessageGenerator {
 		);
 	}
 
-	analyzeListing(rawListingText: string): ListingSignals {
-		return this.analyzer.analyze(rawListingText);
+	analyzeListing(rawListingText: string, sellerName = ""): ListingSignals {
+		return this.analyzer.analyze(rawListingText, "", "", sellerName);
 	}
 
 	private isSkip(message: string): boolean {
 		const cleaned = message.trim().toUpperCase();
 		return cleaned === SKIP_TOKEN || cleaned === "[SKIP]";
-	}
-
-	private async generateWithRetries(
-		signals: ListingSignals,
-		personalization: ReturnType<PersonalizationEngine["personalize"]>,
-		variant: MessageVariant,
-		isFirstInConversation: boolean,
-	): Promise<MessageResult> {
-		let [systemPrompt, userPrompt] = buildGenerationPrompt(
-			signals,
-			personalization,
-			variant,
-			this.persona,
-		);
-
-		for (let attempt = 1; attempt <= MAX_GENERATION_RETRIES + 1; attempt++) {
-			const rawMessage = this.cleanMessage(
-				(await this.llm.generate(systemPrompt, userPrompt)).trim(),
-			);
-
-			if (this.isSkip(rawMessage)) {
-				console.info(
-					`Variant ${variant} for ${signals.listingId} skipped by agent decision`,
-				);
-				const delayResult = this.delay.calculate(0, isFirstInConversation);
-				return { message: null, skipped: true, delayMs: delayResult.delayMs };
-			}
-
-			// Pipeline: PostProcess → SpamGuard → Safeguard
-			const processed = this.postProcessor.process(rawMessage);
-			const validation = await this.spamGuard.validate(processed, signals);
-
-			if (validation.passed && !this.isDuplicate(processed)) {
-				const safeguardResult = await this.safeguard.check(processed);
-				if (!safeguardResult.passed) {
-					if (attempt <= MAX_GENERATION_RETRIES) {
-						userPrompt +=
-							`\n\nVORHERIGER VERSUCH ABGELEHNT: ${safeguardResult.reason}` +
-							"\nBitte korrigiere diese Probleme.";
-						console.info(
-							`Variant ${variant} attempt ${attempt} rejected by safeguard: ${safeguardResult.reason}`,
-						);
-						continue;
-					}
-				}
-
-				this.sentHashes.add(this.hash(processed));
-				this.delay.markActive();
-				const delayResult = this.delay.calculate(
-					processed.length,
-					isFirstInConversation,
-				);
-
-				const message = createMessage(processed, variant, signals.listingId, {
-					listingUrl: signals.listingUrl,
-					spamGuardScore: validation.score,
-					generationAttempt: attempt,
-				});
-				return { message, skipped: false, delayMs: delayResult.delayMs };
-			}
-
-			if (attempt <= MAX_GENERATION_RETRIES) {
-				userPrompt +=
-					`\n\nVORHERIGER VERSUCH ABGELEHNT: ${validation.rejectionReasons.join("; ")}` +
-					"\nBitte korrigiere diese Probleme.";
-				console.info(
-					`Variant ${variant} attempt ${attempt} rejected: ${validation.rejectionReasons.join("; ")}`,
-				);
-			}
-		}
-
-		throw new MessageGenerationError(
-			`Variant ${variant} failed after ${MAX_GENERATION_RETRIES + 1} attempts for listing ${signals.listingId}`,
-		);
 	}
 
 	private cleanMessage(text: string): string {

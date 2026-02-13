@@ -2,10 +2,7 @@ import { ListingAnalyzer } from "./listing-analyzer";
 import {
 	type ListingSignals,
 	type PersonalizationResult,
-	DescriptionEffort,
-	MessageVariant,
 	PriceAssessment,
-	SellerEmotion,
 } from "./models";
 
 export class PersonalizationEngine {
@@ -17,13 +14,11 @@ export class PersonalizationEngine {
 		);
 		const priceInsight = this.buildPriceInsight(signals);
 		const emotionalHook = this.buildEmotionalHook(signals);
-		const recommendedVariants = this.rankVariants(signals);
 
 		return {
 			primaryAnchor,
 			secondaryAnchors,
 			tone: signals.tone,
-			recommendedVariants,
 			priceInsight,
 			emotionalHook,
 		};
@@ -143,139 +138,6 @@ export class PersonalizationEngine {
 		}
 
 		return parts.length > 0 ? parts.join(" -- ") : null;
-	}
-
-	private rankVariants(s: ListingSignals): MessageVariant[] {
-		const scores = new Map<MessageVariant, number>();
-		for (const v of Object.values(MessageVariant)) {
-			scores.set(v as MessageVariant, 0);
-		}
-
-		// A: Direct Honest -- good default, needs unique features to talk about
-		scores.set(
-			MessageVariant.DIRECT_HONEST,
-			(scores.get(MessageVariant.DIRECT_HONEST) ?? 0) +
-				s.uniqueFeatures.length * 2.0,
-		);
-		if (s.descriptionEffort === DescriptionEffort.HIGH) {
-			scores.set(
-				MessageVariant.DIRECT_HONEST,
-				(scores.get(MessageVariant.DIRECT_HONEST) ?? 0) + 1.0,
-			);
-		}
-		// Baseline score -- always viable
-		scores.set(
-			MessageVariant.DIRECT_HONEST,
-			(scores.get(MessageVariant.DIRECT_HONEST) ?? 0) + 1.5,
-		);
-
-		// B: Market Insight -- needs price data
-		if (s.priceAssessment === PriceAssessment.BELOW_MARKET) {
-			scores.set(
-				MessageVariant.MARKET_INSIGHT,
-				(scores.get(MessageVariant.MARKET_INSIGHT) ?? 0) + 4.0,
-			);
-		} else if (s.priceAssessment === PriceAssessment.ABOVE_MARKET) {
-			scores.set(
-				MessageVariant.MARKET_INSIGHT,
-				(scores.get(MessageVariant.MARKET_INSIGHT) ?? 0) + 2.0,
-			);
-		}
-		if (s.pricePerSqm > 0) {
-			scores.set(
-				MessageVariant.MARKET_INSIGHT,
-				(scores.get(MessageVariant.MARKET_INSIGHT) ?? 0) + 1.0,
-			);
-		}
-
-		// C: Buyer Match -- strongest variant, plausible when location + price clear
-		if (s.city && s.price > 0) {
-			scores.set(
-				MessageVariant.BUYER_MATCH,
-				(scores.get(MessageVariant.BUYER_MATCH) ?? 0) + 3.0,
-			);
-		}
-		if (s.propertyType) {
-			scores.set(
-				MessageVariant.BUYER_MATCH,
-				(scores.get(MessageVariant.BUYER_MATCH) ?? 0) + 1.0,
-			);
-		}
-		if (s.wohnflaeche > 0) {
-			scores.set(
-				MessageVariant.BUYER_MATCH,
-				(scores.get(MessageVariant.BUYER_MATCH) ?? 0) + 0.5,
-			);
-		}
-
-		// D: Neighborhood Pro -- needs location signals
-		scores.set(
-			MessageVariant.NEIGHBORHOOD_PRO,
-			(scores.get(MessageVariant.NEIGHBORHOOD_PRO) ?? 0) +
-				s.locationQualityHints.length * 1.5,
-		);
-		if (s.lifestyleSignals.length > 0) {
-			scores.set(
-				MessageVariant.NEIGHBORHOOD_PRO,
-				(scores.get(MessageVariant.NEIGHBORHOOD_PRO) ?? 0) + 1.0,
-			);
-		}
-		if (s.grundstueck > 500) {
-			scores.set(
-				MessageVariant.NEIGHBORHOOD_PRO,
-				(scores.get(MessageVariant.NEIGHBORHOOD_PRO) ?? 0) + 1.0,
-			);
-		}
-
-		// E: Sharp Short -- universal fallback, always viable
-		scores.set(
-			MessageVariant.SHARP_SHORT,
-			(scores.get(MessageVariant.SHARP_SHORT) ?? 0) + 2.0,
-		);
-		if (s.isVb) {
-			scores.set(
-				MessageVariant.SHARP_SHORT,
-				(scores.get(MessageVariant.SHARP_SHORT) ?? 0) + 1.0,
-			);
-		}
-		if (s.price > 0 && s.wohnflaeche > 0) {
-			scores.set(
-				MessageVariant.SHARP_SHORT,
-				(scores.get(MessageVariant.SHARP_SHORT) ?? 0) + 1.0,
-			);
-		}
-
-		// F: Value Add -- needs hidden potential
-		const hiddenValueKeywords = [
-			"einliegerwohnung",
-			"teilbar",
-			"ausbau",
-			"dachgeschoss",
-			"umbau",
-			"potenzial",
-			"möglich",
-			"separater eingang",
-		];
-		const textLower = s.rawText.toLowerCase();
-		for (const kw of hiddenValueKeywords) {
-			if (textLower.includes(kw)) {
-				scores.set(
-					MessageVariant.VALUE_ADD,
-					(scores.get(MessageVariant.VALUE_ADD) ?? 0) + 2.0,
-				);
-			}
-		}
-		if (s.grundstueck > 0 && s.grundstueck > s.wohnflaeche * 3) {
-			scores.set(
-				MessageVariant.VALUE_ADD,
-				(scores.get(MessageVariant.VALUE_ADD) ?? 0) + 1.5,
-			);
-		}
-
-		// Sort by score descending
-		return [...scores.entries()]
-			.sort((a, b) => b[1] - a[1])
-			.map(([variant]) => variant);
 	}
 
 	getPersonalizationDepth(
