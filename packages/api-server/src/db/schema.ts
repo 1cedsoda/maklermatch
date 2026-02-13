@@ -147,29 +147,63 @@ export const listingDetailSnapshots = sqliteTable("listing_detail_snapshots", {
 	html: text("html"),
 });
 
+// --- Companies ---
+
+export const companies = sqliteTable("companies", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	name: text("name").notNull(),
+	email: text("email"),
+	description: text("description"),
+	billingStreet: text("billing_street"),
+	billingStreet2: text("billing_street_2"),
+	billingCity: text("billing_city"),
+	billingZipCode: text("billing_zip_code"),
+	billingCountry: text("billing_country").default("Deutschland"),
+	ustId: text("ust_id"),
+	iban: text("iban"),
+	bic: text("bic"),
+	bankName: text("bank_name"),
+	minPrice: integer("min_price"),
+	maxPrice: integer("max_price"),
+	active: integer("active", { mode: "boolean" }).notNull().default(true),
+	createdAt: text("created_at")
+		.notNull()
+		.$defaultFn(() => new Date().toISOString()),
+});
+
+// --- Zip Code Groups (many-to-many: group has many zip codes and many brokers) ---
+
+export const zipCodeGroups = sqliteTable("zip_code_groups", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	companyId: integer("company_id")
+		.notNull()
+		.references(() => companies.id),
+	zipCodes: text("zip_codes").notNull(), // comma-separated: "79098,79100,79104"
+	active: integer("active", { mode: "boolean" }).notNull().default(true),
+	createdAt: text("created_at")
+		.notNull()
+		.$defaultFn(() => new Date().toISOString()),
+});
+
+export const zipCodeGroupBrokers = sqliteTable("zip_code_group_brokers", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	groupId: integer("group_id")
+		.notNull()
+		.references(() => zipCodeGroups.id),
+	brokerId: integer("broker_id")
+		.notNull()
+		.references(() => brokers.id),
+});
+
 // --- Brokers ---
 
 export const brokers = sqliteTable("brokers", {
 	id: integer("id").primaryKey({ autoIncrement: true }),
+	companyId: integer("company_id").references(() => companies.id),
 	name: text("name").notNull(),
-	firma: text("firma").notNull(),
-	region: text("region").notNull(),
-	spezialisierung: text("spezialisierung"),
-	erfahrungJahre: integer("erfahrung_jahre"),
-	provision: text("provision"),
-	arbeitsweise: text("arbeitsweise"),
-	leistungen: text("leistungen", { mode: "json" }).$type<string[]>(),
-	besonderheiten: text("besonderheiten", { mode: "json" }).$type<string[]>(),
-	telefon: text("telefon"),
+	phone: text("phone"),
 	email: text("email").notNull(),
-	criteriaJson: text("criteria_json", { mode: "json" }).$type<{
-		plzPrefixes?: string[];
-		cities?: string[];
-		bundeslaender?: string[];
-		propertyTypes?: string[];
-		minPrice?: number;
-		maxPrice?: number;
-	}>(),
+	bio: text("bio"),
 	active: integer("active", { mode: "boolean" }).notNull().default(true),
 	createdAt: text("created_at")
 		.notNull()

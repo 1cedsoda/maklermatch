@@ -15,6 +15,8 @@ import { setupScraperSocket } from "./socket/scraper";
 import { startScheduler } from "./services/scheduler";
 import conversationsRoutes from "./routes/conversations";
 import brokersRoutes from "./routes/brokers";
+import companiesRoutes from "./routes/companies";
+import companyPlzRoutes from "./routes/company-plz";
 import { startSmtpReceiver } from "./email/smtp-receiver";
 import { startSendScheduler } from "./email/scheduler";
 
@@ -40,6 +42,8 @@ app.use("/api/targets", jwtAuth, targetsRoutes);
 app.use("/api/sellers", jwtAuth, sellersRoutes);
 app.use("/api/conversations", jwtAuth, conversationsRoutes);
 app.use("/api/brokers", jwtAuth, brokersRoutes);
+app.use("/api/companies", jwtAuth, companiesRoutes);
+app.use("/api/companies/:companyId/plz", jwtAuth, companyPlzRoutes);
 
 // Run migrations on startup
 migrate(db, { migrationsFolder: "./drizzle" });
