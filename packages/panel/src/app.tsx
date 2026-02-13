@@ -12,6 +12,7 @@ import { QuestsPage } from "@/pages/quests";
 import { QuestDetailPage } from "@/pages/quest-detail";
 import { SellersPage } from "@/pages/sellers";
 import { SellerDetailPage } from "@/pages/seller-detail";
+import { ChatPage } from "@/pages/chat";
 
 export function App() {
 	return (
@@ -27,6 +28,7 @@ export function App() {
 						}
 					>
 						<Route index element={<DashboardPage />} />
+						<Route path="chat" element={<ChatPage />} />
 						<Route path="listings" element={<ListingsPage />} />
 						<Route path="listings/:id" element={<ListingDetailPage />} />
 						<Route path="sellers" element={<SellersPage />} />
