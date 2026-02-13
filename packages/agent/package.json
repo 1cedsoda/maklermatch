@@ -1,0 +1,14 @@
+{
+	"name": "@scraper/agent",
+	"version": "1.0.0",
+	"type": "module",
+	"main": "src/index.ts",
+	"types": "src/index.ts",
+	"dependencies": {
+		"@ai-sdk/openai-compatible": "^2.0.30",
+		"ai": "^6.0.85"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	}
+}

@@ -22,29 +22,20 @@ export const FOLLOWUP_2_MIN_DAYS = 10;
 export const FOLLOWUP_2_MAX_DAYS = 14;
 
 // --- Forbidden Words (instant rejection) ---
+// Strategy: We're openly a Makler, so "Makler" itself is allowed.
+// Block words that make messages sound like sales templates or spam.
 export const FORBIDDEN_WORDS = [
-	// Commercial intent — Makler identity
-	"Makler",
-	"Maklerin",
-	"Vermittlung",
-	"vermitteln",
-	"Provision",
-	"Honorar",
-	"Courtage",
-	// Sales language
-	"Angebot",
-	"anbieten",
-	"Dienstleistung",
-	"Service",
+	// Sales-template language
 	"kostenlos",
 	"unverbindlich",
 	"gratis",
+	"kostenfrei",
 	"Vermarktung",
 	"vermarkten",
-	// Collaboration pitch
+	"Dienstleistung",
+	// Formal collaboration pitch
 	"Zusammenarbeit",
 	"zusammenarbeiten",
-	"Partner",
 	"Partnerschaft",
 	// Expertise bragging
 	"jahrelange Erfahrung",
@@ -53,23 +44,23 @@ export const FORBIDDEN_WORDS = [
 	"Expertise",
 	"Experte",
 	"Expertin",
-	// Client pitch
-	"Netzwerk",
-	"Kaufinteressenten",
+	// Client pitch / too salesy
 	"Kundenstamm",
-	"Interessenten",
 	"vorgemerkte Käufer",
+	"exklusiv",
+	"Premium",
 	// Free services pitch
-	"Bewertung",
 	"Wertermittlung",
 	"Marktanalyse",
 	"Exposé",
-	// Help offers
-	"helfen",
-	"unterstützen",
-	"Unterstützung",
-	"begleiten",
+	// Overly formal/corporate
 	"Begleitung",
+	"ganzheitlich",
+	"individuell",
+	"maßgeschneidert",
+	"Rundum-Service",
+	"Full-Service",
+	"Komplettpaket",
 ];
 
 export const FORBIDDEN_PHRASES = [
@@ -81,22 +72,29 @@ export const FORBIDDEN_PHRASES = [
 	"erlauben Sie mir",
 	"gestatten Sie",
 	"darf ich mich vorstellen",
-	"ich würde gerne",
 	"ich möchte mich vorstellen",
 	"ich kontaktiere Sie",
-	"Ihr Objekt",
+	// Template-language
+	"kostenlose Bewertung",
+	"unverbindliches Gespräch",
+	"unverbindliches Angebot",
+	"kostenlose Einschätzung",
+	"ohne Verpflichtung",
+	"keinerlei Kosten",
+	"keine Kosten für Sie",
+	// Pressure tactics
+	"Zeitfenster schließt sich",
+	"der Markt dreht",
+	"jetzt ist der richtige Zeitpunkt",
+	"warten Sie nicht zu lange",
+	"bevor es zu spät ist",
 ];
 
 // Openers that make a message feel automated
+// Note: "Hallo", "Hey", "Hi" are now ALLOWED for first contact (Erstkontakt)
 export const FORBIDDEN_OPENERS = [
-	"Hallo",
-	"Guten Tag",
-	"Guten Morgen",
-	"Guten Abend",
 	"Sehr geehrte",
 	"Sehr geehrter",
-	"Liebe ",
-	"Lieber ",
 	"Ich ",
 	"Mein ",
 	"Wir ",
@@ -195,6 +193,22 @@ export const URGENCY_KEYWORDS = [
 	"beruflich",
 	"Ausland",
 ];
+
+// --- Humanizer ---
+export const TYPO_PROBABILITY = 0.08; // 8% of messages get a typo
+
+// --- Delay (milliseconds) ---
+export const FIRST_MESSAGE_DELAY_MIN = 120_000; // 2 min
+export const FIRST_MESSAGE_DELAY_MAX = 1_200_000; // 20 min
+export const ONLINE_DELAY_MIN = 5_000; // 5 sek
+export const ONLINE_DELAY_MAX = 45_000; // 45 sek
+export const AFK_DELAY_MIN = 60_000; // 1 min
+export const AFK_DELAY_MAX = 180_000; // 3 min
+export const AFK_PROBABILITY = 0.15; // 15% chance of "stepped away"
+export const CHARS_PER_SECOND = 4; // typing speed for delay scaling
+
+// --- Safeguard ---
+export const SAFEGUARD_ENABLED = true;
 
 // --- Tone Detection ---
 export const INFORMAL_MARKERS = [

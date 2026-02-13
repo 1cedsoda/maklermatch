@@ -24,12 +24,12 @@ export enum PriceAssessment {
 }
 
 export enum MessageVariant {
-	SPECIFIC_OBSERVER = "A",
-	MARKET_INSIDER = "B",
-	EMPATHETIC_PEER = "C",
-	CURIOUS_NEIGHBOR = "D",
-	QUIET_EXPERT = "E",
-	VALUE_SPOTTER = "F",
+	DIRECT_HONEST = "A",
+	MARKET_INSIGHT = "B",
+	BUYER_MATCH = "C",
+	NEIGHBORHOOD_PRO = "D",
+	SHARP_SHORT = "E",
+	VALUE_ADD = "F",
 }
 
 export enum ReplySentiment {

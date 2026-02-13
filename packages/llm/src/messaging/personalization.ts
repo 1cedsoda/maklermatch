@@ -30,7 +30,7 @@ export class PersonalizationEngine {
 	}
 
 	private selectPrimaryAnchor(s: ListingSignals): string {
-		// 1. Unique features — pick the most specific one
+		// 1. Unique features -- pick the most specific one
 		if (s.uniqueFeatures.length > 0) {
 			const ranked = [...s.uniqueFeatures].sort((a, b) => b.length - a.length);
 			return ranked[0];
@@ -41,7 +41,7 @@ export class PersonalizationEngine {
 
 		// 3. Lifestyle signals combined with location
 		if (s.lifestyleSignals.length > 0 && s.locationQualityHints.length > 0) {
-			return `${s.locationQualityHints[0]} — ${s.lifestyleSignals.slice(0, 2).join(", ")}`;
+			return `${s.locationQualityHints[0]} -- ${s.lifestyleSignals.slice(0, 2).join(", ")}`;
 		}
 
 		// 4. Price discrepancy
@@ -103,13 +103,13 @@ export class PersonalizationEngine {
 		const diffPct = ((s.pricePerSqm - marketAvg) / marketAvg) * 100;
 
 		if (diffPct < -25) {
-			return `${Math.round(s.pricePerSqm)}€/m² — deutlich unter dem regionalen Durchschnitt von ~${Math.round(marketAvg)}€/m²`;
+			return `${Math.round(s.pricePerSqm)}€/m² -- deutlich unter dem regionalen Durchschnitt von ~${Math.round(marketAvg)}€/m²`;
 		}
 		if (diffPct < -10) {
-			return `${Math.round(s.pricePerSqm)}€/m² — unter dem regionalen Durchschnitt von ~${Math.round(marketAvg)}€/m²`;
+			return `${Math.round(s.pricePerSqm)}€/m² -- unter dem regionalen Durchschnitt von ~${Math.round(marketAvg)}€/m²`;
 		}
 		if (diffPct > 25) {
-			return `${Math.round(s.pricePerSqm)}€/m² — über dem regionalen Durchschnitt von ~${Math.round(marketAvg)}€/m²`;
+			return `${Math.round(s.pricePerSqm)}€/m² -- über dem regionalen Durchschnitt von ~${Math.round(marketAvg)}€/m²`;
 		}
 		return `${Math.round(s.pricePerSqm)}€/m² (Marktschnitt: ~${Math.round(marketAvg)}€/m²)`;
 	}
@@ -142,7 +142,7 @@ export class PersonalizationEngine {
 			parts.push("Familienhaus");
 		}
 
-		return parts.length > 0 ? parts.join(" — ") : null;
+		return parts.length > 0 ? parts.join(" -- ") : null;
 	}
 
 	private rankVariants(s: ListingSignals): MessageVariant[] {
@@ -151,96 +151,101 @@ export class PersonalizationEngine {
 			scores.set(v as MessageVariant, 0);
 		}
 
-		// A: Specific Observer — needs unique features
+		// A: Direct Honest -- good default, needs unique features to talk about
 		scores.set(
-			MessageVariant.SPECIFIC_OBSERVER,
-			(scores.get(MessageVariant.SPECIFIC_OBSERVER) ?? 0) +
+			MessageVariant.DIRECT_HONEST,
+			(scores.get(MessageVariant.DIRECT_HONEST) ?? 0) +
 				s.uniqueFeatures.length * 2.0,
 		);
 		if (s.descriptionEffort === DescriptionEffort.HIGH) {
 			scores.set(
-				MessageVariant.SPECIFIC_OBSERVER,
-				(scores.get(MessageVariant.SPECIFIC_OBSERVER) ?? 0) + 1.0,
+				MessageVariant.DIRECT_HONEST,
+				(scores.get(MessageVariant.DIRECT_HONEST) ?? 0) + 1.0,
 			);
 		}
+		// Baseline score -- always viable
+		scores.set(
+			MessageVariant.DIRECT_HONEST,
+			(scores.get(MessageVariant.DIRECT_HONEST) ?? 0) + 1.5,
+		);
 
-		// B: Market Insider — needs price data
+		// B: Market Insight -- needs price data
 		if (s.priceAssessment === PriceAssessment.BELOW_MARKET) {
 			scores.set(
-				MessageVariant.MARKET_INSIDER,
-				(scores.get(MessageVariant.MARKET_INSIDER) ?? 0) + 4.0,
+				MessageVariant.MARKET_INSIGHT,
+				(scores.get(MessageVariant.MARKET_INSIGHT) ?? 0) + 4.0,
 			);
 		} else if (s.priceAssessment === PriceAssessment.ABOVE_MARKET) {
 			scores.set(
-				MessageVariant.MARKET_INSIDER,
-				(scores.get(MessageVariant.MARKET_INSIDER) ?? 0) + 2.0,
+				MessageVariant.MARKET_INSIGHT,
+				(scores.get(MessageVariant.MARKET_INSIGHT) ?? 0) + 2.0,
 			);
 		}
 		if (s.pricePerSqm > 0) {
 			scores.set(
-				MessageVariant.MARKET_INSIDER,
-				(scores.get(MessageVariant.MARKET_INSIDER) ?? 0) + 1.0,
+				MessageVariant.MARKET_INSIGHT,
+				(scores.get(MessageVariant.MARKET_INSIGHT) ?? 0) + 1.0,
 			);
 		}
 
-		// C: Empathetic Peer — works best with proud/detailed sellers
-		if (s.sellerEmotion === SellerEmotion.PROUD) {
+		// C: Buyer Match -- strongest variant, plausible when location + price clear
+		if (s.city && s.price > 0) {
 			scores.set(
-				MessageVariant.EMPATHETIC_PEER,
-				(scores.get(MessageVariant.EMPATHETIC_PEER) ?? 0) + 3.0,
+				MessageVariant.BUYER_MATCH,
+				(scores.get(MessageVariant.BUYER_MATCH) ?? 0) + 3.0,
 			);
 		}
-		if (s.descriptionEffort === DescriptionEffort.HIGH) {
+		if (s.propertyType) {
 			scores.set(
-				MessageVariant.EMPATHETIC_PEER,
-				(scores.get(MessageVariant.EMPATHETIC_PEER) ?? 0) + 2.0,
+				MessageVariant.BUYER_MATCH,
+				(scores.get(MessageVariant.BUYER_MATCH) ?? 0) + 1.0,
 			);
 		}
-		if (s.isVb) {
+		if (s.wohnflaeche > 0) {
 			scores.set(
-				MessageVariant.EMPATHETIC_PEER,
-				(scores.get(MessageVariant.EMPATHETIC_PEER) ?? 0) + 1.0,
+				MessageVariant.BUYER_MATCH,
+				(scores.get(MessageVariant.BUYER_MATCH) ?? 0) + 0.5,
 			);
 		}
 
-		// D: Curious Neighbor — needs location signals
+		// D: Neighborhood Pro -- needs location signals
 		scores.set(
-			MessageVariant.CURIOUS_NEIGHBOR,
-			(scores.get(MessageVariant.CURIOUS_NEIGHBOR) ?? 0) +
+			MessageVariant.NEIGHBORHOOD_PRO,
+			(scores.get(MessageVariant.NEIGHBORHOOD_PRO) ?? 0) +
 				s.locationQualityHints.length * 1.5,
 		);
 		if (s.lifestyleSignals.length > 0) {
 			scores.set(
-				MessageVariant.CURIOUS_NEIGHBOR,
-				(scores.get(MessageVariant.CURIOUS_NEIGHBOR) ?? 0) + 1.0,
+				MessageVariant.NEIGHBORHOOD_PRO,
+				(scores.get(MessageVariant.NEIGHBORHOOD_PRO) ?? 0) + 1.0,
 			);
 		}
 		if (s.grundstueck > 500) {
 			scores.set(
-				MessageVariant.CURIOUS_NEIGHBOR,
-				(scores.get(MessageVariant.CURIOUS_NEIGHBOR) ?? 0) + 1.0,
+				MessageVariant.NEIGHBORHOOD_PRO,
+				(scores.get(MessageVariant.NEIGHBORHOOD_PRO) ?? 0) + 1.0,
 			);
 		}
 
-		// E: Quiet Expert — universal fallback, always viable
+		// E: Sharp Short -- universal fallback, always viable
 		scores.set(
-			MessageVariant.QUIET_EXPERT,
-			(scores.get(MessageVariant.QUIET_EXPERT) ?? 0) + 2.0,
+			MessageVariant.SHARP_SHORT,
+			(scores.get(MessageVariant.SHARP_SHORT) ?? 0) + 2.0,
 		);
 		if (s.isVb) {
 			scores.set(
-				MessageVariant.QUIET_EXPERT,
-				(scores.get(MessageVariant.QUIET_EXPERT) ?? 0) + 1.0,
+				MessageVariant.SHARP_SHORT,
+				(scores.get(MessageVariant.SHARP_SHORT) ?? 0) + 1.0,
 			);
 		}
 		if (s.price > 0 && s.wohnflaeche > 0) {
 			scores.set(
-				MessageVariant.QUIET_EXPERT,
-				(scores.get(MessageVariant.QUIET_EXPERT) ?? 0) + 1.0,
+				MessageVariant.SHARP_SHORT,
+				(scores.get(MessageVariant.SHARP_SHORT) ?? 0) + 1.0,
 			);
 		}
 
-		// F: Value Spotter — needs hidden potential
+		// F: Value Add -- needs hidden potential
 		const hiddenValueKeywords = [
 			"einliegerwohnung",
 			"teilbar",
@@ -255,15 +260,15 @@ export class PersonalizationEngine {
 		for (const kw of hiddenValueKeywords) {
 			if (textLower.includes(kw)) {
 				scores.set(
-					MessageVariant.VALUE_SPOTTER,
-					(scores.get(MessageVariant.VALUE_SPOTTER) ?? 0) + 2.0,
+					MessageVariant.VALUE_ADD,
+					(scores.get(MessageVariant.VALUE_ADD) ?? 0) + 2.0,
 				);
 			}
 		}
 		if (s.grundstueck > 0 && s.grundstueck > s.wohnflaeche * 3) {
 			scores.set(
-				MessageVariant.VALUE_SPOTTER,
-				(scores.get(MessageVariant.VALUE_SPOTTER) ?? 0) + 1.5,
+				MessageVariant.VALUE_ADD,
+				(scores.get(MessageVariant.VALUE_ADD) ?? 0) + 1.5,
 			);
 		}
 

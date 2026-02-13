@@ -1,5 +1,6 @@
 import { readFileSync } from "fs";
-import { join } from "path";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 import {
 	FORMAL_MARKERS,
 	INFORMAL_MARKERS,
@@ -18,8 +19,12 @@ import {
 } from "./models";
 
 // Load market prices once at import time
+const __dirname =
+	typeof import.meta.dir === "string"
+		? import.meta.dir
+		: dirname(fileURLToPath(import.meta.url));
 const MARKET_PRICES_PATH = join(
-	import.meta.dir,
+	__dirname,
 	"..",
 	"..",
 	"data",

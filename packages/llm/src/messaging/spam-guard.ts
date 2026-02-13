@@ -49,7 +49,7 @@ export class SpamGuard {
 					passed: false,
 					score,
 					rejectionReasons: [
-						`LLM-Qualitätsscore ${score}/10 — unter Minimum von ${MIN_QUALITY_SCORE}`,
+						`LLM-Qualitätsscore ${score}/10 -- unter Minimum von ${MIN_QUALITY_SCORE}`,
 					],
 				};
 			}
@@ -114,31 +114,36 @@ export class SpamGuard {
 		}
 
 		if (questionCount === 0) {
-			reasons.push("Kein Fragezeichen — Nachricht braucht genau einen CTA");
+			reasons.push(
+				"Kein Fragezeichen -- Nachricht braucht mindestens eine Frage",
+			);
 		}
 
-		if (!message.trimEnd().endsWith("?")) {
-			reasons.push("Nachricht muss mit einer Frage enden");
-		}
+		// Message should contain a question but doesn't need to END with ?
+		// because a greeting/sign-off can follow the question (Erstkontakt)
 
 		if (/https?:\/\/|www\./i.test(message)) {
-			reasons.push("Enthält URL — nicht erlaubt");
+			reasons.push("Enthält URL -- nicht erlaubt");
 		}
 
-		const greetingEndings = [
-			"viele grüße",
-			"liebe grüße",
-			"mit freundlichen grüßen",
-			"mfg",
-			"lg",
-			"beste grüße",
-			"herzliche grüße",
-		];
+		if (message.includes("\u2014") || message.includes("\u2013")) {
+			reasons.push("Em-dash/en-dash gefunden (AI-Tell)");
+		}
+
+		if (/\s--\s/.test(message)) {
+			reasons.push(
+				"Gedankenstrich (--) gefunden, keine Gedankenstriche benutzen",
+			);
+		}
+
+		// Greeting endings are now ALLOWED for first contact (Erstkontakt)
+		// Only block overly formal closings
+		const tooFormalEndings = ["mit freundlichen grüßen", "hochachtungsvoll"];
 		const msgLower = message.toLowerCase().trimEnd();
-		const lastChars = msgLower.replace(/\?$/, "").trimEnd().slice(-50);
-		for (const greeting of greetingEndings) {
-			if (lastChars.includes(greeting)) {
-				reasons.push(`Grußformel am Ende: '${greeting}'`);
+		const lastChars = msgLower.slice(-60);
+		for (const ending of tooFormalEndings) {
+			if (lastChars.includes(ending)) {
+				reasons.push(`Zu formelle Grußformel: '${ending}'`);
 			}
 		}
 
@@ -192,7 +197,7 @@ export class SpamGuard {
 			return [];
 
 		return [
-			"Keine Personalisierung — kein spezifisches Detail aus der Anzeige gefunden",
+			"Keine Personalisierung -- kein spezifisches Detail aus der Anzeige gefunden",
 		];
 	}
 
@@ -203,7 +208,7 @@ export class SpamGuard {
 		);
 		if (selfWords && selfWords.length >= 2) {
 			return [
-				"Zu viel Ich-Fokus am Anfang — beginne mit der Immobilie, nicht mit dir",
+				"Zu viel Ich-Fokus am Anfang -- beginne mit der Immobilie, nicht mit dir",
 			];
 		}
 		return [];
@@ -211,14 +216,15 @@ export class SpamGuard {
 
 	private async llmQualityCheck(message: string): Promise<number> {
 		const systemPrompt = `\
-Du bist ein privater Immobilienverkäufer auf Kleinanzeigen. Du bekommst täglich \
-30-50 Nachrichten, davon 80% Lowball-Angebote und Spam von Maklern.
+Du bist ein privater Immobilienverkäufer auf Kleinanzeigen. Du bekommst regelmäßig \
+Nachrichten von Maklern -- die meisten sind generische Copy-Paste-Templates die du ignorierst.
 
 Bewerte diese Nachricht auf einer Skala von 1-10:
-- 1-3: Offensichtlicher Spam/Makler, würde ich ignorieren
-- 4-5: Unklar, wahrscheinlich ignorieren
-- 6-7: Interessant, könnte antworten
-- 8-10: Würde definitiv antworten, fühlt sich echt an
+- 1-3: Generisches Makler-Template, offensichtlicher Sales-Pitch, würde ich ignorieren
+- 4-5: Irgendein Makler, aber nichts Besonderes -- wahrscheinlich ignorieren
+- 6-7: Klingt echt, hat was Spezifisches zu meiner Immobilie gesagt -- könnte antworten
+- 8-10: Klingt wie ein normaler Mensch der zufällig Makler ist, hat mir was Nützliches \
+gesagt oder mich neugierig gemacht -- würde antworten
 
 Antworte NUR mit der Zahl (1-10), nichts weiter.`;
 

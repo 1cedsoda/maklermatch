@@ -9,8 +9,8 @@
 		"start": "next start"
 	},
 	"dependencies": {
-		"@ai-sdk/openai-compatible": "^2.0.30",
 		"@ai-sdk/react": "^3.0.87",
+		"@scraper/agent": "workspace:*",
 		"ai": "^6.0.85",
 		"next": "16.1.6",
 		"react": "19.2.3",
