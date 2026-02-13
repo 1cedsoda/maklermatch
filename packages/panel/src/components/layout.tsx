@@ -8,11 +8,13 @@ import {
 	Zap,
 	Bot,
 	LogOut,
+	MessageSquare,
 	type LucideIcon,
 } from "lucide-react";
 
 const NAV_ITEMS: { to: string; label: string; icon: LucideIcon }[] = [
 	{ to: "/", label: "Dashboard", icon: LayoutDashboard },
+	{ to: "/chat", label: "Chat", icon: MessageSquare },
 	{ to: "/listings", label: "Listings", icon: List },
 	{ to: "/sellers", label: "Sellers", icon: Users },
 	{ to: "/quests", label: "Scraping Quests", icon: Search },
@@ -60,7 +62,7 @@ export function Layout() {
 					</button>
 				</div>
 			</aside>
-			<main className="flex-1 overflow-auto p-6">
+			<main className="flex-1 overflow-auto p-6 h-full min-h-0">
 				<Outlet />
 			</main>
 		</div>
