@@ -6,6 +6,11 @@ export async function POST(req: Request) {
 	const {
 		messages,
 		brokerProfile,
-	}: { messages: UIMessage[]; brokerProfile?: BrokerInfo } = await req.json();
-	return handleChatRequest(messages, { brokerProfile });
+		listingText,
+	}: {
+		messages: UIMessage[];
+		brokerProfile?: BrokerInfo;
+		listingText?: string;
+	} = await req.json();
+	return handleChatRequest(messages, { brokerProfile, listingText });
 }

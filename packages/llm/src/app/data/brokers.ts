@@ -1,3 +1,5 @@
+import type { BrokerCriteria } from "@/messaging";
+
 export interface BrokerProfile {
 	id: string;
 	name: string;
@@ -11,6 +13,7 @@ export interface BrokerProfile {
 	besonderheiten: string[];
 	telefon: string;
 	email: string;
+	criteria?: BrokerCriteria;
 }
 
 export const TEST_BROKERS: BrokerProfile[] = [
@@ -43,6 +46,14 @@ export const TEST_BROKERS: BrokerProfile[] = [
 		],
 		telefon: "089 123 456 78",
 		email: "thomas@mueller-immobilien.de",
+		criteria: {
+			plzPrefixes: ["80", "81", "82", "83", "85"],
+			cities: ["München"],
+			bundeslaender: ["Bayern"],
+			propertyTypes: ["Haus", "Wohnung"],
+			minPrice: 100_000,
+			maxPrice: 3_000_000,
+		},
 	},
 	{
 		id: "weber-freiburg",
@@ -71,6 +82,14 @@ export const TEST_BROKERS: BrokerProfile[] = [
 		],
 		telefon: "0761 456 789 01",
 		email: "sandra@weber-partner-immobilien.de",
+		criteria: {
+			plzPrefixes: ["79"],
+			cities: ["Freiburg"],
+			bundeslaender: ["Baden-Württemberg"],
+			propertyTypes: ["Haus", "Wohnung", "Mehrfamilienhaus"],
+			minPrice: 150_000,
+			maxPrice: 5_000_000,
+		},
 	},
 	{
 		id: "engel-voelkers-freiburg",
@@ -100,6 +119,14 @@ export const TEST_BROKERS: BrokerProfile[] = [
 		],
 		telefon: "0761 888 999 00",
 		email: "m.hoffmann@engelvoelkers.com",
+		criteria: {
+			plzPrefixes: ["79"],
+			cities: ["Freiburg"],
+			bundeslaender: ["Baden-Württemberg"],
+			propertyTypes: ["Haus", "Wohnung", "Mehrfamilienhaus"],
+			minPrice: 500_000,
+			maxPrice: 10_000_000,
+		},
 	},
 	{
 		id: "brecht-suedbaden",
@@ -128,5 +155,12 @@ export const TEST_BROKERS: BrokerProfile[] = [
 		],
 		telefon: "0761 333 444 55",
 		email: "julia@brecht-immobilien.de",
+		criteria: {
+			plzPrefixes: ["79", "78"],
+			bundeslaender: ["Baden-Württemberg"],
+			propertyTypes: ["Haus", "Grundstück"],
+			minPrice: 100_000,
+			maxPrice: 2_000_000,
+		},
 	},
 ];

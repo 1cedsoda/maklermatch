@@ -3,6 +3,7 @@ export interface Listing {
 	title: string;
 	price: string;
 	location: string;
+	sellerName: string;
 	rawText: string;
 }
 
@@ -12,6 +13,7 @@ export const TEST_LISTINGS: Listing[] = [
 		title: "Charmantes Einfamilienhaus mit Wintergarten",
 		price: "850.000€ VB",
 		location: "München-Pasing",
+		sellerName: "Stefan K.",
 		rawText: `Charmantes Einfamilienhaus mit Wintergarten und großem Garten
 
 12345 Bayern – München-Pasing
@@ -36,6 +38,7 @@ Wir verkaufen privat, da wir beruflich nach Hamburg ziehen. Besichtigung ab sofo
 		title: "10-Zimmer Mehrgenerationenhaus - 2x DHH - großer Garten",
 		price: "2.780.000 € VB",
 		location: "Freiburg im Breisgau",
+		sellerName: "Familie Weber",
 		rawText: `10-Zimmer Mehrgenerationenhaus - 2x DHH - großer Garten
 
 2.780.000 € VB
@@ -85,6 +88,7 @@ Privater Nutzer, aktiv seit 05.08.2025`,
 		title: "Sehr charmante DG-Maisonette-Wohnung in Freiburg Wiehre",
 		price: "540.000 € VB",
 		location: "Freiburg im Breisgau",
+		sellerName: "Ingrid M.",
 		rawText: `Sehr charmante DG-Maisonette-Wohnung in Freiburg Wiehre
 
 540.000 € VB
@@ -113,6 +117,7 @@ Privater Nutzer, aktiv seit 17.02.2017`,
 		title: "Mehrfamilienhaus mit Werkstatt mitten in Freiburg",
 		price: "660.000 € VB",
 		location: "Freiburg im Breisgau",
+		sellerName: "Jürgen Hartmann",
 		rawText: `Mehrfamilienhaus mit Werkstatt mitten in Freiburg
 
 660.000 € VB (vorher 730.000 €)

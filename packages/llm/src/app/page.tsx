@@ -15,12 +15,17 @@ export default function Chat() {
 	);
 	const brokerRef = useRef(selectedBroker);
 	brokerRef.current = selectedBroker;
+	const listingRef = useRef(selectedListing);
+	listingRef.current = selectedListing;
 
 	const transport = useMemo(
 		() =>
 			new DefaultChatTransport({
 				api: "/api/chat",
-				body: () => ({ brokerProfile: brokerRef.current }),
+				body: () => ({
+					brokerProfile: brokerRef.current,
+					listingText: listingRef.current.rawText,
+				}),
 			}),
 		[],
 	);
@@ -31,7 +36,6 @@ export default function Chat() {
 	const [input, setInput] = useState("");
 	const [generating, setGenerating] = useState(false);
 	const [generateMeta, setGenerateMeta] = useState<{
-		variant: string;
 		score: number;
 	} | null>(null);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -60,6 +64,12 @@ export default function Chat() {
 				body: JSON.stringify({
 					listingText: selectedListing.rawText,
 					listingId: selectedListing.id,
+					sellerName: selectedListing.sellerName,
+					persona: {
+						name: selectedBroker.name,
+						firma: selectedBroker.firma,
+						region: selectedBroker.region,
+					},
 				}),
 			});
 
@@ -70,7 +80,7 @@ export default function Chat() {
 			}
 
 			const data = await res.json();
-			setGenerateMeta({ variant: data.variant, score: data.score });
+			setGenerateMeta({ score: data.score });
 			setMessages([
 				{
 					id: `gen-${Date.now()}`,
@@ -233,8 +243,7 @@ export default function Chat() {
 									</div>
 									{isGenerated && (
 										<p className="mt-1 px-1 text-xs text-zinc-400">
-											Variante {generateMeta.variant} &middot; Score{" "}
-											{generateMeta.score}/10
+											Score {generateMeta.score}/10
 										</p>
 									)}
 								</div>
