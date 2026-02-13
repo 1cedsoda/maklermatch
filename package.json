@@ -1,0 +1,14 @@
+{
+	"name": "scraper-monorepo",
+	"private": true,
+	"workspaces": [
+		"packages/*"
+	],
+	"scripts": {
+		"prepare": "lefthook install"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.15",
+		"lefthook": "^2.1.1"
+	}
+}
