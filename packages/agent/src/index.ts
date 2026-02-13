@@ -9,3 +9,18 @@ export type { BrokerInfo } from "./prompt";
 
 export { createLLMClient } from "./llm-client";
 export type { LLMClient } from "./llm-client";
+
+export {
+	IDENTITY,
+	STYLE_RULES,
+	CHAT_CHARACTER,
+	OUTREACH_DONTS,
+	TASK_INITIAL,
+	TASK_FOLLOWUP_1,
+	TASK_FOLLOWUP_2,
+	SAFEGUARD,
+	LISTING_GATE,
+	SENTIMENT,
+	QUALITY_CHECK,
+	injectPersona,
+} from "./prompts";

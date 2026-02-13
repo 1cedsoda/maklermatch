@@ -12,7 +12,7 @@ export function createLLMClient(config: AgentConfig = {}): LLMClient {
 		baseURL: "https://api.langdock.com/openai/eu/v1",
 		apiKey: config.apiKey ?? process.env.LANGDOCK_API_KEY,
 	});
-	const model = provider(config.model ?? "claude-sonnet-4-5-20250929");
+	const model = provider(config.model ?? "gpt-5-chat-latest");
 
 	return {
 		async generate(systemPrompt: string, userPrompt: string): Promise<string> {

@@ -7,6 +7,7 @@ export interface AgentConfig {
 	model?: string;
 	systemPrompt?: string;
 	brokerProfile?: BrokerInfo;
+	listingText?: string;
 }
 
 function createProvider(apiKey?: string) {
@@ -22,11 +23,13 @@ export async function handleChatRequest(
 	config: AgentConfig = {},
 ): Promise<Response> {
 	const provider = createProvider(config.apiKey);
-	const model = config.model ?? "claude-sonnet-4-5-20250929";
+	const model = config.model ?? "gpt-5-chat-latest";
 
 	const result = streamText({
 		model: provider(model),
-		system: config.systemPrompt ?? buildSystemPrompt(config.brokerProfile),
+		system:
+			config.systemPrompt ??
+			buildSystemPrompt(config.brokerProfile, config.listingText),
 		messages: await convertToModelMessages(messages),
 	});
 
