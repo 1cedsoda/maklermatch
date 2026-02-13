@@ -193,20 +193,20 @@ export class SpamGuard {
 		if (signals.city && msgLower.includes(signals.city.toLowerCase()))
 			return [];
 
-		// Check if PLZ is mentioned
-		if (signals.plz && message.includes(signals.plz)) return [];
+		// Check if zip code is mentioned
+		if (signals.zipCode && message.includes(signals.zipCode)) return [];
 
-		// Check if wohnfläche is mentioned
+		// Check if living area is mentioned
 		if (
-			signals.wohnflaeche &&
-			message.includes(String(Math.round(signals.wohnflaeche)))
+			signals.livingArea &&
+			message.includes(String(Math.round(signals.livingArea)))
 		)
 			return [];
 
-		// Check if grundstück is mentioned
+		// Check if lot size is mentioned
 		if (
-			signals.grundstueck &&
-			message.includes(String(Math.round(signals.grundstueck)))
+			signals.lotSize &&
+			message.includes(String(Math.round(signals.lotSize)))
 		)
 			return [];
 

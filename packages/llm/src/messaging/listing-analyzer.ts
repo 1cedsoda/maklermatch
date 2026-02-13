@@ -135,27 +135,25 @@ export class ListingAnalyzer {
 		const wfMatch = text.match(
 			/(?:Wohnfläche|Wohnfl)\s*[\n:]*\s*(\d+(?:[,.]\d+)?)\s*m/i,
 		);
-		if (wfMatch)
-			s.wohnflaeche = Number.parseFloat(wfMatch[1].replace(",", "."));
+		if (wfMatch) s.livingArea = Number.parseFloat(wfMatch[1].replace(",", "."));
 
 		const gfMatch = text.match(
 			/(?:Grundstücks?fläche|Grundst)\s*[\n:]*\s*(\d+(?:[,.]\d+)?)\s*m/i,
 		);
-		if (gfMatch)
-			s.grundstueck = Number.parseFloat(gfMatch[1].replace(",", "."));
+		if (gfMatch) s.lotSize = Number.parseFloat(gfMatch[1].replace(",", "."));
 
 		const ziMatch = text.match(/Zimmer\s*[\n:]*\s*(\d+(?:[,.]\d+)?)/i);
 		if (ziMatch)
-			s.zimmer = Math.round(Number.parseFloat(ziMatch[1].replace(",", ".")));
+			s.rooms = Math.round(Number.parseFloat(ziMatch[1].replace(",", ".")));
 
 		const bjMatch = text.match(/Baujahr\s*[\n:]*\s*(\d{4})/i);
-		if (bjMatch) s.baujahr = Number.parseInt(bjMatch[1]);
+		if (bjMatch) s.yearBuilt = Number.parseInt(bjMatch[1]);
 
 		const etMatch = text.match(/Etagen\s*[\n:]*\s*(\d+)/i);
-		if (etMatch) s.etagen = Number.parseInt(etMatch[1]);
+		if (etMatch) s.floors = Number.parseInt(etMatch[1]);
 
-		if (s.price > 0 && s.wohnflaeche > 0) {
-			s.pricePerSqm = Math.round(s.price / s.wohnflaeche);
+		if (s.price > 0 && s.livingArea > 0) {
+			s.pricePerSqm = Math.round(s.price / s.livingArea);
 		}
 	}
 
@@ -164,12 +162,12 @@ export class ListingAnalyzer {
 			/(\d{5})\s+(\S+(?:\s+\S+)*?)\s*[-–]\s*(.+?)(?:\n|$)/,
 		);
 		if (locMatch) {
-			s.plz = locMatch[1];
-			s.bundesland = locMatch[2].trim();
+			s.zipCode = locMatch[1];
+			s.state = locMatch[2].trim();
 			s.city = locMatch[3].trim();
 		} else {
-			const plzMatch = s.rawText.match(/\b(\d{5})\b/);
-			if (plzMatch) s.plz = plzMatch[1];
+			const zipMatch = s.rawText.match(/\b(\d{5})\b/);
+			if (zipMatch) s.zipCode = zipMatch[1];
 		}
 
 		const textLower = s.rawText.toLowerCase();
@@ -289,18 +287,18 @@ export class ListingAnalyzer {
 	}
 
 	private assessPrice(s: ListingSignals): void {
-		if (s.pricePerSqm <= 0 || !s.plz) {
+		if (s.pricePerSqm <= 0 || !s.zipCode) {
 			s.priceAssessment = PriceAssessment.UNKNOWN;
 			return;
 		}
 
-		const plzPrefix = s.plz.slice(0, 2);
+		const zipPrefix = s.zipCode.slice(0, 2);
 		const propertyKey =
 			s.propertyType === "Haus" || s.propertyType === "Mehrfamilienhaus"
 				? "haus"
 				: "wohnung";
 
-		const regionalAvg = Number(MARKET_PRICES[plzPrefix]?.[propertyKey] ?? 0);
+		const regionalAvg = Number(MARKET_PRICES[zipPrefix]?.[propertyKey] ?? 0);
 		if (regionalAvg <= 0) {
 			s.priceAssessment = PriceAssessment.UNKNOWN;
 			return;
@@ -390,12 +388,12 @@ export class ListingAnalyzer {
 		s.tone = informalCount > formalCount ? Tone.DU : Tone.SIE;
 	}
 
-	getMarketPrice(plz: string, propertyType = "haus"): number {
-		const plzPrefix = plz.length >= 2 ? plz.slice(0, 2) : "";
+	getMarketPrice(zipCode: string, propertyType = "haus"): number {
+		const zipPrefix = zipCode.length >= 2 ? zipCode.slice(0, 2) : "";
 		const propertyKey =
 			propertyType === "Haus" || propertyType === "Mehrfamilienhaus"
 				? "haus"
 				: "wohnung";
-		return Number(MARKET_PRICES[plzPrefix]?.[propertyKey] ?? 0);
+		return Number(MARKET_PRICES[zipPrefix]?.[propertyKey] ?? 0);
 	}
 }

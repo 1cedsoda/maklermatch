@@ -1,18 +1,18 @@
 import { createLLMClient } from "@scraper/agent";
 import { MessageGenerator } from "@/messaging";
-import type { BrokerCriteria, MessagePersona } from "@/messaging";
+import type { CompanyCriteria, MessagePersona } from "@/messaging";
 
 const llmClient = createLLMClient();
 
 export async function POST(req: Request) {
 	try {
-		const { listingText, listingId, sellerName, persona, brokerCriteria } =
+		const { listingText, listingId, sellerName, persona, companyCriteria } =
 			(await req.json()) as {
 				listingText: string;
 				listingId?: string;
 				sellerName?: string;
 				persona?: MessagePersona;
-				brokerCriteria?: BrokerCriteria;
+				companyCriteria?: CompanyCriteria;
 			};
 
 		if (!listingText) {
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
 
 		const generator = new MessageGenerator(llmClient, {
 			persona,
-			brokerCriteria,
+			companyCriteria,
 		});
 		const result = await generator.generate(
 			listingText,

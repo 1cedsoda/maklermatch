@@ -44,7 +44,7 @@ export class PersonalizationEngine {
 			s.priceAssessment === PriceAssessment.BELOW_MARKET &&
 			s.pricePerSqm > 0
 		) {
-			return `${Math.round(s.pricePerSqm)}€/m² in ${s.city || s.plz}`;
+			return `${Math.round(s.pricePerSqm)}€/m² in ${s.city || s.zipCode}`;
 		}
 
 		// 5. Location quality
@@ -52,7 +52,7 @@ export class PersonalizationEngine {
 
 		// 6. Fallback: combine basic facts
 		const parts: string[] = [];
-		if (s.wohnflaeche) parts.push(`${Math.round(s.wohnflaeche)}m²`);
+		if (s.livingArea) parts.push(`${Math.round(s.livingArea)}m²`);
 		if (s.propertyType) parts.push(s.propertyType);
 		if (s.city) parts.push(`in ${s.city}`);
 		return parts.length > 0 ? parts.join(" ") : s.title;
@@ -75,8 +75,8 @@ export class PersonalizationEngine {
 			}
 		}
 
-		if (s.grundstueck > 0) {
-			candidates.push(`${Math.round(s.grundstueck)}m² Grundstück`);
+		if (s.lotSize > 0) {
+			candidates.push(`${Math.round(s.lotSize)}m² Grundstück`);
 		}
 
 		if (s.lifestyleSignals.length > 0) {
@@ -91,7 +91,7 @@ export class PersonalizationEngine {
 		if (s.pricePerSqm <= 0) return null;
 
 		const analyzer = new ListingAnalyzer();
-		const marketAvg = analyzer.getMarketPrice(s.plz, s.propertyType);
+		const marketAvg = analyzer.getMarketPrice(s.zipCode, s.propertyType);
 
 		if (marketAvg <= 0) return `${Math.round(s.pricePerSqm)}€/m²`;
 

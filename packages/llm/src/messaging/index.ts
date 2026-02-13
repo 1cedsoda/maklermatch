@@ -14,7 +14,7 @@ export type {
 	PersonalizationResult,
 	Message,
 	ConversationState,
-	BrokerCriteria,
+	CompanyCriteria,
 	GateRejectionType,
 	GateResult,
 } from "./models";

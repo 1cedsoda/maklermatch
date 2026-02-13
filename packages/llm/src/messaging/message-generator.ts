@@ -4,7 +4,7 @@ import { DelayCalculator } from "./delay-calculator";
 import { ListingAnalyzer } from "./listing-analyzer";
 import { ListingGate } from "./listing-gate";
 import {
-	type BrokerCriteria,
+	type CompanyCriteria,
 	type GateResult,
 	type ListingSignals,
 	type Message,
@@ -46,7 +46,7 @@ export class MessageGenerator {
 	private safeguard: Safeguard;
 	private delay: DelayCalculator;
 	private persona?: MessagePersona;
-	private brokerCriteria?: BrokerCriteria;
+	private companyCriteria?: CompanyCriteria;
 	private sentHashes = new Set<string>();
 
 	constructor(
@@ -54,7 +54,7 @@ export class MessageGenerator {
 		opts: {
 			testMode?: boolean;
 			persona?: MessagePersona;
-			brokerCriteria?: BrokerCriteria;
+			companyCriteria?: CompanyCriteria;
 		} = {},
 	) {
 		this.llm = llmClient;
@@ -63,7 +63,7 @@ export class MessageGenerator {
 		this.safeguard = new Safeguard(llmClient);
 		this.delay = new DelayCalculator({ testMode: opts.testMode });
 		this.persona = opts.persona;
-		this.brokerCriteria = opts.brokerCriteria;
+		this.companyCriteria = opts.companyCriteria;
 	}
 
 	async generate(
@@ -79,7 +79,7 @@ export class MessageGenerator {
 			sellerName,
 		);
 
-		const gateResult = await this.gate.check(signals, this.brokerCriteria);
+		const gateResult = await this.gate.check(signals, this.companyCriteria);
 		if (!gateResult.passed) {
 			console.info(
 				`Listing ${listingId} rejected by gate: [${gateResult.rejectionType}] ${gateResult.rejectionReason}`,

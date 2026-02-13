@@ -13,13 +13,12 @@ import type { ListingSignals, PersonalizationResult } from "./models";
 
 export interface MessagePersona {
 	name: string;
-	firma: string;
-	region?: string;
+	company: string;
 }
 
 const DEFAULT_PERSONA: MessagePersona = {
 	name: "Max",
-	firma: "Maklermatch",
+	company: "Maklermatch",
 };
 
 // --- Tone helpers ---
@@ -41,7 +40,7 @@ function buildSystemPrompt(
 ): string {
 	const vorname = extractVorname(persona.name);
 	const parts = [IDENTITY, STYLE_RULES, toneInstruction, task].join("\n\n");
-	return injectPersona(parts, vorname, persona.firma);
+	return injectPersona(parts, vorname, persona.company);
 }
 
 // --- Context builders ---
@@ -55,7 +54,7 @@ export function buildListingContext(signals: ListingSignals): string {
 			`VERKÄUFER: ${signals.sellerName} (benutze den Vornamen in der Ansprache, nicht den vollen Namen!)`,
 		);
 	if (signals.title) parts.push(`Titel: ${signals.title}`);
-	if (signals.city) parts.push(`Ort: ${signals.city} (${signals.plz})`);
+	if (signals.city) parts.push(`Ort: ${signals.city} (${signals.zipCode})`);
 	if (signals.price) {
 		let priceStr = `${signals.price.toLocaleString("de-DE")}€`;
 		if (signals.isVb) priceStr += " VB";
@@ -63,12 +62,12 @@ export function buildListingContext(signals: ListingSignals): string {
 	}
 	if (signals.pricePerSqm)
 		parts.push(`Preis/m²: ~${Math.round(signals.pricePerSqm)}€`);
-	if (signals.wohnflaeche)
-		parts.push(`Wohnfläche: ${Math.round(signals.wohnflaeche)}m²`);
-	if (signals.grundstueck)
-		parts.push(`Grundstück: ${Math.round(signals.grundstueck)}m²`);
-	if (signals.zimmer) parts.push(`Zimmer: ${signals.zimmer}`);
-	if (signals.baujahr) parts.push(`Baujahr: ${signals.baujahr}`);
+	if (signals.livingArea)
+		parts.push(`Wohnfläche: ${Math.round(signals.livingArea)}m²`);
+	if (signals.lotSize)
+		parts.push(`Grundstück: ${Math.round(signals.lotSize)}m²`);
+	if (signals.rooms) parts.push(`Zimmer: ${signals.rooms}`);
+	if (signals.yearBuilt) parts.push(`Baujahr: ${signals.yearBuilt}`);
 
 	return parts.join("\n");
 }

@@ -44,15 +44,15 @@ export interface ListingSignals {
 	priceAssessment: PriceAssessment;
 	provision: string;
 
-	wohnflaeche: number;
-	grundstueck: number;
-	zimmer: number;
-	baujahr: number;
-	etagen: number;
+	livingArea: number;
+	lotSize: number;
+	rooms: number;
+	yearBuilt: number;
+	floors: number;
 
-	plz: string;
+	zipCode: string;
 	city: string;
-	bundesland: string;
+	state: string;
 	neighborhood: string;
 
 	uniqueFeatures: string[];
@@ -86,14 +86,14 @@ export function createListingSignals(
 		isVb: false,
 		priceAssessment: PriceAssessment.UNKNOWN,
 		provision: "",
-		wohnflaeche: 0,
-		grundstueck: 0,
-		zimmer: 0,
-		baujahr: 0,
-		etagen: 0,
-		plz: "",
+		livingArea: 0,
+		lotSize: 0,
+		rooms: 0,
+		yearBuilt: 0,
+		floors: 0,
+		zipCode: "",
 		city: "",
-		bundesland: "",
+		state: "",
 		neighborhood: "",
 		uniqueFeatures: [],
 		renovationHistory: "",
@@ -112,7 +112,7 @@ export function createListingSignals(
 
 // --- Pre-Screening Gate ---
 
-export type GateRejectionType = "kriterien_mismatch" | "llm_rejection";
+export type GateRejectionType = "criteria_mismatch" | "llm_rejection";
 
 export interface GateResult {
 	passed: boolean;
@@ -121,16 +121,9 @@ export interface GateResult {
 	details: string[];
 }
 
-export interface BrokerCriteria {
+export interface CompanyCriteria {
 	minPrice?: number;
 	maxPrice?: number;
-	propertyTypes?: string[];
-	plzPrefixes?: string[];
-	cities?: string[];
-	bundeslaender?: string[];
-	minWohnflaeche?: number;
-	maxWohnflaeche?: number;
-	minZimmer?: number;
 }
 
 export interface PersonalizationResult {

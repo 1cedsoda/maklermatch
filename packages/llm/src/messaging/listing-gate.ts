@@ -1,6 +1,6 @@
 import { LISTING_GATE } from "@scraper/agent";
 import type { LLMClient } from "./message-generator";
-import type { BrokerCriteria, GateResult, ListingSignals } from "./models";
+import type { CompanyCriteria, GateResult, ListingSignals } from "./models";
 
 export class ListingGate {
 	private llm?: LLMClient;
@@ -11,10 +11,10 @@ export class ListingGate {
 
 	async check(
 		signals: ListingSignals,
-		criteria?: BrokerCriteria,
+		criteria?: CompanyCriteria,
 	): Promise<GateResult> {
 		if (criteria) {
-			const criteriaResult = this.checkKriterien(signals, criteria);
+			const criteriaResult = this.checkCriteria(signals, criteria);
 			if (!criteriaResult.passed) return criteriaResult;
 		}
 
@@ -31,9 +31,9 @@ export class ListingGate {
 		};
 	}
 
-	private checkKriterien(
+	private checkCriteria(
 		signals: ListingSignals,
-		criteria: BrokerCriteria,
+		criteria: CompanyCriteria,
 	): GateResult {
 		const mismatches: string[] = [];
 
@@ -56,94 +56,11 @@ export class ListingGate {
 			}
 		}
 
-		if (
-			criteria.propertyTypes &&
-			criteria.propertyTypes.length > 0 &&
-			signals.propertyType
-		) {
-			const typesLower = criteria.propertyTypes.map((t) => t.toLowerCase());
-			if (!typesLower.includes(signals.propertyType.toLowerCase())) {
-				mismatches.push(
-					`Immobilientyp "${signals.propertyType}" nicht in [${criteria.propertyTypes.join(", ")}]`,
-				);
-			}
-		}
-
-		if (
-			criteria.plzPrefixes &&
-			criteria.plzPrefixes.length > 0 &&
-			signals.plz
-		) {
-			const matchesPLZ = criteria.plzPrefixes.some((prefix) =>
-				signals.plz.startsWith(prefix),
-			);
-			if (!matchesPLZ) {
-				mismatches.push(
-					`PLZ ${signals.plz} nicht in Regionen [${criteria.plzPrefixes.join(", ")}]`,
-				);
-			}
-		}
-
-		if (criteria.cities && criteria.cities.length > 0 && signals.city) {
-			const citiesLower = criteria.cities.map((c) => c.toLowerCase());
-			const cityLower = signals.city.toLowerCase();
-			const match = citiesLower.some(
-				(c) => cityLower.includes(c) || c.includes(cityLower),
-			);
-			if (!match) {
-				mismatches.push(
-					`Stadt "${signals.city}" nicht in [${criteria.cities.join(", ")}]`,
-				);
-			}
-		}
-
-		if (
-			criteria.bundeslaender &&
-			criteria.bundeslaender.length > 0 &&
-			signals.bundesland
-		) {
-			const blLower = criteria.bundeslaender.map((b) => b.toLowerCase());
-			if (!blLower.includes(signals.bundesland.toLowerCase())) {
-				mismatches.push(
-					`Bundesland "${signals.bundesland}" nicht in [${criteria.bundeslaender.join(", ")}]`,
-				);
-			}
-		}
-
-		if (signals.wohnflaeche > 0) {
-			if (
-				criteria.minWohnflaeche !== undefined &&
-				signals.wohnflaeche < criteria.minWohnflaeche
-			) {
-				mismatches.push(
-					`Wohnfläche ${signals.wohnflaeche}m² unter Minimum ${criteria.minWohnflaeche}m²`,
-				);
-			}
-			if (
-				criteria.maxWohnflaeche !== undefined &&
-				signals.wohnflaeche > criteria.maxWohnflaeche
-			) {
-				mismatches.push(
-					`Wohnfläche ${signals.wohnflaeche}m² über Maximum ${criteria.maxWohnflaeche}m²`,
-				);
-			}
-		}
-
-		if (
-			criteria.minZimmer !== undefined &&
-			signals.zimmer > 0 &&
-			signals.zimmer < criteria.minZimmer
-		) {
-			mismatches.push(
-				`${signals.zimmer} Zimmer unter Minimum ${criteria.minZimmer}`,
-			);
-		}
-
 		if (mismatches.length > 0) {
 			return {
 				passed: false,
-				rejectionType: "kriterien_mismatch",
-				rejectionReason: `Inserat passt nicht zu Makler-Kriterien: ${mismatches[0]}`,
+				rejectionType: "criteria_mismatch",
+				rejectionReason: `Inserat passt nicht zu Kriterien: ${mismatches[0]}`,
 				details: mismatches,
 			};
 		}
@@ -158,7 +75,7 @@ export class ListingGate {
 
 	private async checkLLM(
 		signals: ListingSignals,
-		criteria?: BrokerCriteria,
+		criteria?: CompanyCriteria,
 	): Promise<GateResult> {
 		try {
 			const context = this.buildLLMContext(signals, criteria);
@@ -197,27 +114,25 @@ export class ListingGate {
 
 	private buildLLMContext(
 		signals: ListingSignals,
-		criteria?: BrokerCriteria,
+		criteria?: CompanyCriteria,
 	): string {
 		const parts: string[] = [];
 
 		parts.push("=== INSERAT ===");
 		parts.push(signals.rawText.slice(0, 2000));
 
-		parts.push("\n=== MAKLER-PROFIL ===");
+		parts.push("\n=== FIRMEN-KRITERIEN ===");
 		if (criteria) {
-			if (criteria.propertyTypes?.length)
-				parts.push(`Immobilientypen: ${criteria.propertyTypes.join(", ")}`);
-			if (criteria.cities?.length)
-				parts.push(`Städte: ${criteria.cities.join(", ")}`);
-			if (criteria.bundeslaender?.length)
-				parts.push(`Bundesländer: ${criteria.bundeslaender.join(", ")}`);
-			if (criteria.plzPrefixes?.length)
-				parts.push(`PLZ-Bereiche: ${criteria.plzPrefixes.join(", ")}`);
-			if (criteria.minPrice !== undefined || criteria.maxPrice !== undefined) {
-				const min = criteria.minPrice?.toLocaleString("de-DE") ?? "–";
-				const max = criteria.maxPrice?.toLocaleString("de-DE") ?? "–";
-				parts.push(`Preisbereich: ${min}€ – ${max}€`);
+			const range = [
+				criteria.minPrice
+					? `ab ${criteria.minPrice.toLocaleString("de-DE")}€`
+					: null,
+				criteria.maxPrice
+					? `bis ${criteria.maxPrice.toLocaleString("de-DE")}€`
+					: null,
+			].filter(Boolean);
+			if (range.length) {
+				parts.push(`Preisbereich: ${range.join(" ")}`);
 			}
 		} else {
 			parts.push("Keine spezifischen Kriterien hinterlegt.");
@@ -228,7 +143,7 @@ export class ListingGate {
 			parts.push(`Erkannter Typ: ${signals.propertyType}`);
 		if (signals.price) parts.push(`Erkannter Preis: ${signals.price}€`);
 		if (signals.city) parts.push(`Erkannte Stadt: ${signals.city}`);
-		if (signals.plz) parts.push(`PLZ: ${signals.plz}`);
+		if (signals.zipCode) parts.push(`PLZ: ${signals.zipCode}`);
 
 		return parts.join("\n");
 	}
