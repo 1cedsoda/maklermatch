@@ -41,25 +41,17 @@ services:
       - KLEINANZEIGEN_PASSWORD=${KLEINANZEIGEN_PASSWORD}
     volumes:
       - scraper-html:/app/packages/scraping-server/data
-      - ./proxies.txt:/app/packages/scraping/src/proxies.txt:ro
+      - ./proxies.txt:/app/packages/scraping-server/proxies.txt:ro
     shm_size: "2gb"
     networks:
       - internal
     depends_on:
       - api-server
 
-  panel-build:
+  caddy:
     build:
       context: ../..
-      dockerfile: packages/panel/Dockerfile
-    container_name: panel-build
-    volumes:
-      - panel-dist:/app/packages/panel/dist
-    command: ["echo", "Panel built successfully"]
-    restart: "no"
-
-  caddy:
-    image: caddy:2-alpine
+      dockerfile: deployment/production/Dockerfile.caddy
     container_name: caddy
     restart: unless-stopped
     ports:
@@ -67,18 +59,15 @@ services:
       - "80:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - panel-dist:/srv/panel:ro
       - caddy-data:/data
       - caddy-config:/config
     networks:
       - internal
     depends_on:
       - api-server
-      - panel-build
 
 volumes:
   scraper-html:
-  panel-dist:
   caddy-data:
   caddy-config:
 
