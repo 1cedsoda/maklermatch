@@ -14,6 +14,7 @@ export interface KleinanzeigenListing {
 	imageCount: number;
 	isPrivate: boolean;
 	tags: string[];
+	html: string;
 }
 
 function normalize(text: string | null | undefined): string | null {
@@ -42,9 +43,15 @@ function parseLocation(raw: string | null): {
 	return { location: normalized, distance: null };
 }
 
+function ensureAbsoluteUrl(url: string): string {
+	if (!url) return url;
+	if (url.startsWith("http")) return url;
+	return `https://www.kleinanzeigen.de${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
 function extractArticle(article: Element): KleinanzeigenListing {
 	const id = article.getAttribute("data-adid") || "";
-	const url = article.getAttribute("data-href") || "";
+	const url = ensureAbsoluteUrl(article.getAttribute("data-href") || "");
 
 	const titleEl =
 		article.querySelector("h2 a.ellipsis") ??
@@ -80,6 +87,8 @@ function extractArticle(article: Element): KleinanzeigenListing {
 		.map((el) => el.textContent?.trim() || "")
 		.filter(Boolean);
 
+	const html = article.outerHTML;
+
 	return {
 		id,
 		url,
@@ -94,6 +103,7 @@ function extractArticle(article: Element): KleinanzeigenListing {
 		imageCount,
 		isPrivate,
 		tags,
+		html,
 	};
 }
 
@@ -131,10 +141,16 @@ export async function scrapeListings(
 			return { location: normalized, distance: null };
 		}
 
+		function absUrl(u: string): string {
+			if (!u) return u;
+			if (u.startsWith("http")) return u;
+			return `https://www.kleinanzeigen.de${u.startsWith("/") ? "" : "/"}${u}`;
+		}
+
 		const articles = document.querySelectorAll("article.aditem");
 		return Array.from(articles).map((article) => {
 			const id = article.getAttribute("data-adid") || "";
-			const url = article.getAttribute("data-href") || "";
+			const url = absUrl(article.getAttribute("data-href") || "");
 			const titleEl =
 				article.querySelector("h2 a.ellipsis") ??
 				article.querySelector("h2 span.ellipsis");
@@ -160,6 +176,7 @@ export async function scrapeListings(
 			const tags = Array.from(tagEls)
 				.map((el) => el.textContent?.trim() || "")
 				.filter(Boolean);
+			const html = article.outerHTML;
 			return {
 				id,
 				url,
@@ -174,6 +191,7 @@ export async function scrapeListings(
 				imageCount,
 				isPrivate,
 				tags,
+				html,
 			};
 		});
 	});

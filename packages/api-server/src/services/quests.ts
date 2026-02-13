@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import type {
+	CategoryId,
 	CreateQuestRequest,
 	UpdateQuestRequest,
 } from "@scraper/api-types";
@@ -59,7 +60,7 @@ export function questToKleinanzeigenSearch(
 	quest: typeof searchQuests.$inferSelect,
 ) {
 	return {
-		category: quest.category as "haus-zum-kauf",
+		category: quest.category as CategoryId,
 		location: quest.location,
 		...(quest.isPrivate != null ? { isPrivate: quest.isPrivate } : {}),
 	};

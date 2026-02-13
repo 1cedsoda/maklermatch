@@ -9,6 +9,36 @@ const FIXTURE = readFileSync(
 	"utf-8",
 );
 
+const FIXTURE_PRIVATE_ANONYMOUS = readFileSync(
+	join(import.meta.dir, "fixtures", "private-seller-anonymous.html"),
+	"utf-8",
+);
+
+const FIXTURE_PRIVATE_NAMED = readFileSync(
+	join(import.meta.dir, "fixtures", "private-seller-named.html"),
+	"utf-8",
+);
+
+const FIXTURE_COMMERCIAL_BIZTEASER = readFileSync(
+	join(import.meta.dir, "fixtures", "commercial-seller-bizteaser.html"),
+	"utf-8",
+);
+
+const FIXTURE_PRIVATE_NO_OTHER_ADS = readFileSync(
+	join(import.meta.dir, "fixtures", "private-seller-no-other-ads.html"),
+	"utf-8",
+);
+
+const FIXTURE_COMMERCIAL_BIZTEASER_PHONE = readFileSync(
+	join(import.meta.dir, "fixtures", "commercial-seller-bizteaser-phone.html"),
+	"utf-8",
+);
+
+const FIXTURE_COMMERCIAL_BIZTEASER_VONPOLL = readFileSync(
+	join(import.meta.dir, "fixtures", "commercial-seller-bizteaser-vonpoll.html"),
+	"utf-8",
+);
+
 function parseHTML(html: string): Document {
 	const window = new Window();
 	window.document.write(html);
@@ -114,6 +144,160 @@ describe("extractListingDetail", () => {
 
 	test("extracts seller other ads count", () => {
 		expect(detail.seller.otherAdsCount).toBe(115);
+	});
+});
+
+describe("extractListingDetail – private seller (anonymous)", () => {
+	const doc = parseHTML(FIXTURE_PRIVATE_ANONYMOUS);
+	const detail = extractListingDetail(doc);
+
+	test("extracts userId from profile link", () => {
+		expect(detail.seller.userId).toBe("67932377");
+	});
+
+	test("sets name to null when display name is just 'Privat'", () => {
+		expect(detail.seller.name).toBeNull();
+	});
+
+	test("extracts seller type as private", () => {
+		expect(detail.seller.type).toBe("private");
+	});
+
+	test("extracts seller active since date", () => {
+		expect(detail.seller.activeSince).toBe("12.10.2019");
+	});
+
+	test("extracts seller other ads count", () => {
+		expect(detail.seller.otherAdsCount).toBe(15);
+	});
+});
+
+describe("extractListingDetail – private seller (named)", () => {
+	const doc = parseHTML(FIXTURE_PRIVATE_NAMED);
+	const detail = extractListingDetail(doc);
+
+	test("extracts userId from profile link", () => {
+		expect(detail.seller.userId).toBe("151705867");
+	});
+
+	test("extracts seller name when private seller shows real name", () => {
+		expect(detail.seller.name).toBe("Joel");
+	});
+
+	test("extracts seller type as private", () => {
+		expect(detail.seller.type).toBe("private");
+	});
+
+	test("extracts seller active since date", () => {
+		expect(detail.seller.activeSince).toBe("25.05.2025");
+	});
+
+	test("extracts seller other ads count", () => {
+		expect(detail.seller.otherAdsCount).toBe(2);
+	});
+});
+
+describe("extractListingDetail – commercial seller (bizteaser, no userId link)", () => {
+	const doc = parseHTML(FIXTURE_COMMERCIAL_BIZTEASER);
+	const detail = extractListingDetail(doc);
+
+	test("extracts seller name from span when no anchor present", () => {
+		expect(detail.seller.name).toBe(
+			"ak Immobilien Service GmbH - Annett Kubiak",
+		);
+	});
+
+	test("returns null userId when no userId query param in links", () => {
+		expect(detail.seller.userId).toBeNull();
+	});
+
+	test("extracts seller type as commercial", () => {
+		expect(detail.seller.type).toBe("commercial");
+	});
+
+	test("extracts seller active since date", () => {
+		expect(detail.seller.activeSince).toBe("24.11.2017");
+	});
+
+	test("extracts other ads count from bizteaser numads", () => {
+		expect(detail.seller.otherAdsCount).toBe(10);
+	});
+});
+
+describe("extractListingDetail – private seller (named, no other-ads count)", () => {
+	const doc = parseHTML(FIXTURE_PRIVATE_NO_OTHER_ADS);
+	const detail = extractListingDetail(doc);
+
+	test("extracts seller name", () => {
+		expect(detail.seller.name).toBe("Memet Rifat Sahin");
+	});
+
+	test("extracts userId from profile link", () => {
+		expect(detail.seller.userId).toBe("121671276");
+	});
+
+	test("extracts seller type as private", () => {
+		expect(detail.seller.type).toBe("private");
+	});
+
+	test("extracts seller active since date", () => {
+		expect(detail.seller.activeSince).toBe("15.08.2022");
+	});
+
+	test("returns null other ads count when not listed", () => {
+		expect(detail.seller.otherAdsCount).toBeNull();
+	});
+});
+
+describe("extractListingDetail – commercial seller (bizteaser with phone, massahaus)", () => {
+	const doc = parseHTML(FIXTURE_COMMERCIAL_BIZTEASER_PHONE);
+	const detail = extractListingDetail(doc);
+
+	test("extracts seller name from span", () => {
+		expect(detail.seller.name).toBe("massa haus - Norma Fitzlaff");
+	});
+
+	test("returns null userId when no userId query param", () => {
+		expect(detail.seller.userId).toBeNull();
+	});
+
+	test("extracts seller type as commercial", () => {
+		expect(detail.seller.type).toBe("commercial");
+	});
+
+	test("extracts seller active since date", () => {
+		expect(detail.seller.activeSince).toBe("03.08.2022");
+	});
+
+	test("extracts other ads count from bizteaser numads", () => {
+		expect(detail.seller.otherAdsCount).toBe(146);
+	});
+});
+
+describe("extractListingDetail – commercial seller (bizteaser with phone, VON POLL)", () => {
+	const doc = parseHTML(FIXTURE_COMMERCIAL_BIZTEASER_VONPOLL);
+	const detail = extractListingDetail(doc);
+
+	test("extracts seller name from span", () => {
+		expect(detail.seller.name).toBe(
+			"Berlin - Pankow - VON POLL IMMOBILIEN Shop Berlin-Pankow",
+		);
+	});
+
+	test("returns null userId when no userId query param", () => {
+		expect(detail.seller.userId).toBeNull();
+	});
+
+	test("extracts seller type as commercial", () => {
+		expect(detail.seller.type).toBe("commercial");
+	});
+
+	test("extracts seller active since date", () => {
+		expect(detail.seller.activeSince).toBe("11.09.2017");
+	});
+
+	test("extracts other ads count from bizteaser numads", () => {
+		expect(detail.seller.otherAdsCount).toBe(24);
 	});
 });
 

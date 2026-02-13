@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { categoryIdSchema } from "./categories";
 import { ingestListingSchema } from "./ingest";
 
 // ─── Registration ─────────────────────────────────────────────
@@ -121,17 +122,11 @@ export type LogLinePayload = z.infer<typeof logLinePayloadSchema>;
 
 // ─── Server → Scraper ─────────────────────────────────────────
 
-export const hausZumKaufSearchSchema = z.object({
-	category: z.literal("haus-zum-kauf"),
+export const kleinanzeigenSearchSchema = z.object({
+	category: categoryIdSchema,
 	location: z.string(),
 	isPrivate: z.boolean().optional(),
 });
-
-export type HausZumKaufSearch = z.infer<typeof hausZumKaufSearchSchema>;
-
-export const kleinanzeigenSearchSchema = z.discriminatedUnion("category", [
-	hausZumKaufSearchSchema,
-]);
 
 export type KleinanzeigenSearch = z.infer<typeof kleinanzeigenSearchSchema>;
 
@@ -139,6 +134,7 @@ export const scraperTriggerPayloadSchema = z.object({
 	kleinanzeigenSearch: kleinanzeigenSearchSchema,
 	questId: z.number().optional(),
 	maxPages: z.number().int().positive().optional(),
+	headless: z.boolean().optional(),
 });
 
 export type ScraperTriggerPayload = z.infer<typeof scraperTriggerPayloadSchema>;

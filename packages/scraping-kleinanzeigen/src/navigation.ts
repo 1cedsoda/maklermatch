@@ -23,27 +23,39 @@ export async function searchViaStartpage(page: Page): Promise<Page> {
 
 	const link = page.locator('a[href*="kleinanzeigen.de"]').first();
 	await link.waitFor({ state: "visible", timeout: 10000 });
+	// Wait for page to be fully interactive after DOM settles
+	await humanDelay(page, 800);
 
-	const popupPromise = page.waitForEvent("popup");
+	const popupPromise = page.waitForEvent("popup", { timeout: 5000 });
 	log.info("Clicking Kleinanzeigen link...");
 	await humanClick(page, link);
 
-	const popup = await popupPromise;
-	log.info({ url: popup.url() }, "Popup opened");
+	let targetPage: Page;
+	try {
+		const popup = await popupPromise;
+		log.info({ url: popup.url() }, "Popup opened");
+		targetPage = popup;
+	} catch {
+		// Link opened in the same tab instead of a popup
+		log.info("No popup detected, link opened in same tab");
+		await page.waitForURL(/kleinanzeigen\.de/, { timeout: 15000 });
+		log.info({ url: page.url() }, "Navigated to Kleinanzeigen in same tab");
+		targetPage = page;
+	}
 
 	// Kleinanzeigen may geo-redirect based on proxy IP (e.g. to /s-frankfurt-am-main/k0).
 	// Browse the page naturally, then navigate to the homepage to get the category tree.
-	if (!popup.url().endsWith("kleinanzeigen.de/")) {
-		await humanBrowse(popup);
+	if (!targetPage.url().endsWith("kleinanzeigen.de/")) {
+		await humanBrowse(targetPage);
 		log.info("Navigating to homepage...");
-		await popup.goto("https://www.kleinanzeigen.de/", {
+		await targetPage.goto("https://www.kleinanzeigen.de/", {
 			waitUntil: "domcontentloaded",
 			timeout: 60000,
 		});
-		log.info({ url: popup.url() }, "Homepage loaded");
+		log.info({ url: targetPage.url() }, "Homepage loaded");
 	}
 
-	return popup;
+	return targetPage;
 }
 
 export async function dismissCookieBanner(page: Page) {
@@ -73,12 +85,19 @@ export async function dismissCookieBanner(page: Page) {
 	}
 }
 
-export async function navigateToCategory(page: Page) {
-	log.info({ url: page.url() }, "Starting category navigation");
+export async function navigateToCategory(
+	page: Page,
+	category: { slug: string; id: number },
+) {
+	const categoryUrl = `https://www.kleinanzeigen.de/s-${category.slug}/c${category.id}`;
+	log.info(
+		{ url: page.url(), targetCategory: category.slug },
+		"Starting category navigation",
+	);
 
-	// Occasionally hover over other categories before the target (exploration)
+	// Occasionally hover over sidebar categories before navigating (exploration)
 	if (Math.random() < 0.3) {
-		log.info("Exploring other categories before target...");
+		log.info("Exploring sidebar categories before target...");
 		const summaries = page.getByRole("group").locator("summary");
 		const count = await summaries.count();
 		if (count > 2) {
@@ -95,46 +114,35 @@ export async function navigateToCategory(page: Page) {
 		}
 	}
 
-	log.info("Expanding first category group...");
-	await humanClick(
-		page,
-		page
-			.getByRole("group")
-			.filter({ hasText: "Mehr ... Badezimmer Büro" })
-			.locator("summary"),
-	);
-
-	// Scanning pause between category clicks
-	await humanDelay(page, 800);
-
-	log.info("Expanding 'Häuser zum Kauf' sub-group...");
-	await humanClick(
-		page,
-		page
-			.getByRole("group")
-			.filter({ hasText: "Mehr ... Häuser zum Kauf Auf" })
-			.locator("summary"),
-	);
-
-	// Another natural pause
-	await humanDelay(page, 600);
-
-	log.info("Clicking 'Häuser zum Kauf' link...");
-	await humanClick(page, page.getByRole("link", { name: "Häuser zum Kauf" }));
-	await page.waitForLoadState("domcontentloaded");
+	log.info({ url: categoryUrl }, "Navigating to category page...");
+	await page.goto(categoryUrl, {
+		waitUntil: "domcontentloaded",
+		timeout: 60000,
+	});
 	log.info({ url: page.url() }, "Category page loaded");
-	await humanBrowse(page);
+
+	// Brief scroll before applying filters — simulate human scanning the page
+	await humanScroll(page, Math.round(150 + Math.random() * 200));
+	await humanDelay(page, 1200);
 }
 
 export async function filterPrivateListings(page: Page) {
-	log.info("Clicking 'anbieter:privat' filter...");
-	await humanClick(
-		page,
-		page.locator(".browsebox-itemlist a[href*='anbieter:privat']"),
+	log.info("Looking for 'anbieter:privat' filter...");
+	const filterLink = page.locator(
+		".browsebox-itemlist a[href*='anbieter:privat']",
 	);
-	await page.waitForLoadState("domcontentloaded");
-	log.info({ url: page.url() }, "Filtered to private listings");
-	await humanBrowse(page);
+	try {
+		await filterLink.waitFor({ state: "visible", timeout: 5000 });
+		await humanClick(page, filterLink);
+		await page.waitForLoadState("domcontentloaded");
+		log.info({ url: page.url() }, "Filtered to private listings");
+	} catch {
+		log.warn("Private listing filter not available for this category");
+	}
+
+	// Brief scroll before setting location — don't linger
+	await humanScroll(page, Math.round(100 + Math.random() * 150));
+	await humanDelay(page, 800);
 }
 
 export async function setLocation(page: Page, location: string) {
@@ -147,14 +155,30 @@ export async function setLocation(page: Page, location: string) {
 	log.info("Text entered, waiting for autocomplete options...");
 
 	const firstOption = page.getByRole("option").first();
-	await firstOption.waitFor({ state: "visible", timeout: 10000 });
+	await firstOption.waitFor({ state: "visible", timeout: 20000 });
 	log.info("Autocomplete option visible, waiting for it to stabilize...");
 
 	// Wait for the dropdown to settle — options can re-render as results arrive
 	await humanDelay(page, 800);
 
-	log.info("Clicking first autocomplete option...");
-	await humanClick(page, firstOption);
+	// Find the option that matches the desired location, not just the first one
+	const options = page.getByRole("option");
+	const count = await options.count();
+	let matched = firstOption;
+	for (let i = 0; i < count; i++) {
+		const text = await options.nth(i).textContent();
+		if (text?.trim().toLowerCase().startsWith(location.toLowerCase())) {
+			matched = options.nth(i);
+			log.info(
+				{ matched: text?.trim(), index: i },
+				"Found matching autocomplete option",
+			);
+			break;
+		}
+	}
+
+	log.info("Clicking autocomplete option...");
+	await humanClick(page, matched);
 	log.info({ url: page.url() }, "Location set");
 }
 

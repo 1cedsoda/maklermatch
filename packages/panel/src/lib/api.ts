@@ -16,12 +16,23 @@ import type {
 export interface ScraperStatusResponse {
 	isRunning: boolean;
 	lastRunAt: string | null;
+	memoryMb?: {
+		rss: number;
+		heapUsed: number;
+		heapTotal: number;
+	};
 	currentTask: {
 		id: number;
 		questId: number;
 		questName: string;
 		questLocation: string;
 	} | null;
+	scrapers: {
+		id: string;
+		name: string;
+		source: string;
+		cities: string[];
+	}[];
 }
 
 class PanelApiClient {
@@ -93,8 +104,14 @@ class PanelApiClient {
 		return this.request("GET", "/api/scraper/status");
 	}
 
-	startScrape(questId: number): Promise<{ message: string }> {
-		return this.request("POST", "/api/scraper/start", { questId });
+	startScrape(
+		questId: number,
+		opts?: { headless?: boolean },
+	): Promise<{ message: string }> {
+		return this.request("POST", "/api/scraper/start", {
+			questId,
+			...opts,
+		});
 	}
 
 	getQuests(): Promise<QuestsResponse> {

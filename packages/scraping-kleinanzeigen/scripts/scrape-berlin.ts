@@ -2,18 +2,24 @@ import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
 import { generateIdentity, loadProxies } from "@scraper/humanize";
 import type { ScrapedListing } from "@scraper/scraping-core";
+import { getCategoryById } from "@scraper/api-types";
 import {
 	launchBrowser,
 	searchViaStartpage,
 	dismissCookieBanner,
 	navigateToCategory,
+	filterPrivateListings,
 	setLocation,
 	waitForListings,
 	scrapeIncrementally,
 	type ScrapeHandler,
 } from "../src";
 
-const CITY = "Berlin";
+const search = {
+	category: "208", // Häuser zum Kauf
+	location: "Berlin",
+	isPrivate: true,
+};
 const MAX_PAGES = 2;
 
 interface ListingRow {
@@ -169,6 +175,11 @@ function createFileHandler(city: string) {
 }
 
 async function main() {
+	const city = search.location;
+	const maxPages = MAX_PAGES;
+
+	console.log("Starting scrape pass", { city, search, maxPages });
+
 	const proxiesPath = join(
 		import.meta.dir,
 		"..",
@@ -183,20 +194,25 @@ async function main() {
 	const outputDir = join(import.meta.dir, "..", "output", timestamp);
 
 	try {
-		// Navigation
+		// ── Navigation ──
+		console.log("Navigating to Kleinanzeigen...");
 		const kleinanzeigenPage = await searchViaStartpage(page);
 		await dismissCookieBanner(kleinanzeigenPage);
-		await navigateToCategory(kleinanzeigenPage);
-		await setLocation(kleinanzeigenPage, CITY);
+		const categoryInfo = getCategoryById(search.category)!;
+		await navigateToCategory(kleinanzeigenPage, categoryInfo);
+		if (search.isPrivate) {
+			await filterPrivateListings(kleinanzeigenPage);
+		}
+		await setLocation(kleinanzeigenPage, city);
 		await waitForListings(kleinanzeigenPage);
 
-		// Scrape with file handler
-		const { handler, writeResults } = createFileHandler(CITY);
+		// ── Incremental scrape ──
+		const { handler, writeResults } = createFileHandler(city);
 		const result = await scrapeIncrementally(kleinanzeigenPage, handler, {
-			maxPages: MAX_PAGES,
+			maxPages,
 		});
 
-		// Write output
+		// ── Write output ──
 		writeResults(outputDir);
 		console.log(
 			`\nScrape complete: ${result.pagesScraped} pages, ${result.listingsFound} listings, ${result.detailsScraped} details`,

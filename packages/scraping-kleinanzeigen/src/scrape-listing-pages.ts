@@ -14,7 +14,11 @@ import type { Result } from "@scraper/scraping-core";
 
 const log = logger.child({ module: "scrape" });
 
+/** Default category: Häuser zum Kauf (c208) */
+const DEFAULT_CATEGORY = { slug: "haus-kaufen", id: 208 };
+
 export interface ScrapeOptions {
+	category?: { slug: string; id: number };
 	location: string;
 	identity: BrowserIdentity;
 	maxPages?: number;
@@ -45,7 +49,10 @@ export async function scrapeListingPages(
 		await dismissCookieBanner(kleinanzeigenPage);
 
 		log.info("Step 3/6: Navigating to category...");
-		await navigateToCategory(kleinanzeigenPage);
+		await navigateToCategory(
+			kleinanzeigenPage,
+			options.category ?? DEFAULT_CATEGORY,
+		);
 
 		log.info("Step 4/6: Filtering private listings...");
 		await filterPrivateListings(kleinanzeigenPage);

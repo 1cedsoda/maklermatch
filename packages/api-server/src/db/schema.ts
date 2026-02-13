@@ -81,6 +81,7 @@ export const listingAbstractSnapshots = sqliteTable(
 		scrapingTaskId: integer("scraping_task_id").references(
 			() => scrapingTasks.id,
 		),
+		html: text("html"),
 	},
 );
 
@@ -138,6 +139,7 @@ export const listingDetailSnapshots = sqliteTable("listing_detail_snapshots", {
 	scrapingTaskId: integer("scraping_task_id").references(
 		() => scrapingTasks.id,
 	),
+	html: text("html"),
 });
 
 // --- Email / Conversations ---

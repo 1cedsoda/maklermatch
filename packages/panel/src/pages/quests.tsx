@@ -8,6 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import {
 	Table,
 	TableBody,
 	TableCell,
@@ -15,7 +23,9 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { CATEGORY_TREE } from "@scraper/api-types";
 import type { SearchQuest, CreateQuestRequest } from "@scraper/api-types";
+import { Select } from "@/components/ui/select";
 
 function formatNextRun(nextRunAt: number | undefined, active: boolean): string {
 	if (!active) return "--";
@@ -38,6 +48,8 @@ export function QuestsPage() {
 	);
 	const [scraperStatus, setScraperStatus] =
 		useState<ScraperStatusResponse | null>(null);
+	const [scrapeDialogQuest, setScrapeDialogQuest] =
+		useState<SearchQuest | null>(null);
 
 	const fetchQuests = () => {
 		api.getQuests().then((res) => setQuests(res.quests));
@@ -79,9 +91,9 @@ export function QuestsPage() {
 		}
 	};
 
-	const handleStartScrape = async (quest: SearchQuest) => {
+	const handleStartScrape = async (quest: SearchQuest, headless: boolean) => {
 		try {
-			await api.startScrape(quest.id);
+			await api.startScrape(quest.id, { headless });
 			fetchScraperStatus();
 			fetchSchedulerStatus();
 		} catch {
@@ -173,7 +185,7 @@ export function QuestsPage() {
 										variant="outline"
 										size="sm"
 										disabled={isRunning}
-										onClick={() => handleStartScrape(q)}
+										onClick={() => setScrapeDialogQuest(q)}
 									>
 										Scrape
 									</Button>
@@ -193,6 +205,46 @@ export function QuestsPage() {
 					)}
 				</TableBody>
 			</Table>
+
+			<Dialog
+				open={scrapeDialogQuest !== null}
+				onOpenChange={(open) => {
+					if (!open) setScrapeDialogQuest(null);
+				}}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Start Scrape</DialogTitle>
+						<DialogDescription>
+							Run "{scrapeDialogQuest?.name}" in headless or visible browser
+							mode?
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => {
+								if (scrapeDialogQuest) {
+									handleStartScrape(scrapeDialogQuest, false);
+								}
+								setScrapeDialogQuest(null);
+							}}
+						>
+							Visible
+						</Button>
+						<Button
+							onClick={() => {
+								if (scrapeDialogQuest) {
+									handleStartScrape(scrapeDialogQuest, true);
+								}
+								setScrapeDialogQuest(null);
+							}}
+						>
+							Headless
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
@@ -206,7 +258,7 @@ function CreateQuestForm({
 }) {
 	const [name, setName] = useState("");
 	const [location, setLocation] = useState("");
-	const [category, setCategory] = useState("haus-zum-kauf");
+	const [category, setCategory] = useState("208");
 	const [maxPages, setMaxPages] = useState("");
 	const [minInterval, setMinInterval] = useState("30");
 	const [maxInterval, setMaxInterval] = useState("60");
@@ -252,11 +304,22 @@ function CreateQuestForm({
 					</div>
 					<div className="space-y-1">
 						<Label htmlFor="category">Category</Label>
-						<Input
+						<Select
 							id="category"
 							value={category}
 							onChange={(e) => setCategory(e.target.value)}
-						/>
+						>
+							{CATEGORY_TREE.map((group) => (
+								<optgroup key={group.id} label={group.name}>
+									<option value={String(group.id)}>{group.name} (alle)</option>
+									{group.children.map((child) => (
+										<option key={child.id} value={String(child.id)}>
+											{child.name}
+										</option>
+									))}
+								</optgroup>
+							))}
+						</Select>
 					</div>
 					<div className="space-y-1">
 						<Label htmlFor="maxPages">Max Pages (optional)</Label>

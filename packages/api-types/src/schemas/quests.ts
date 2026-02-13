@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { categoryIdSchema } from "../scraper/categories";
 
 // ─── Search Quests ───────────────────────────────────────────
 
@@ -6,7 +7,7 @@ export const searchQuestSchema = z.object({
 	id: z.number(),
 	name: z.string(),
 	active: z.boolean(),
-	category: z.string(),
+	category: categoryIdSchema,
 	location: z.string(),
 	isPrivate: z.boolean().nullable(),
 	maxPages: z.number().nullable(),
@@ -20,7 +21,7 @@ export type SearchQuest = z.infer<typeof searchQuestSchema>;
 
 export const createQuestRequestSchema = z.object({
 	name: z.string().min(1),
-	category: z.string(),
+	category: categoryIdSchema,
 	location: z.string().min(1),
 	isPrivate: z.boolean().optional(),
 	maxPages: z.number().int().positive().optional(),
@@ -33,7 +34,7 @@ export type CreateQuestRequest = z.infer<typeof createQuestRequestSchema>;
 export const updateQuestRequestSchema = z.object({
 	name: z.string().min(1).optional(),
 	active: z.boolean().optional(),
-	category: z.string().optional(),
+	category: categoryIdSchema.optional(),
 	location: z.string().min(1).optional(),
 	isPrivate: z.boolean().optional(),
 	maxPages: z.number().int().positive().nullable().optional(),

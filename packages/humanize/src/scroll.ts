@@ -26,13 +26,17 @@ export async function humanScroll(
 	// Determine how far to scroll
 	let totalPixels = pixels;
 	if (totalPixels == null) {
-		const { scrollHeight, clientHeight } = await page.evaluate(() => ({
-			scrollHeight: (document.body ?? document.documentElement).scrollHeight,
-			clientHeight: window.innerHeight,
-		}));
-		const scrollable = Math.max(0, scrollHeight - clientHeight);
+		const { scrollHeight, clientHeight, scrollTop } = await page.evaluate(
+			() => ({
+				scrollHeight: (document.body ?? document.documentElement).scrollHeight,
+				clientHeight: window.innerHeight,
+				scrollTop:
+					document.documentElement.scrollTop || document.body.scrollTop,
+			}),
+		);
+		const remaining = Math.max(0, scrollHeight - clientHeight - scrollTop);
 		const [minFrac, maxFrac] = cfg.browse.scrollFraction;
-		totalPixels = Math.round(scrollable * randBetween(minFrac, maxFrac));
+		totalPixels = Math.round(remaining * randBetween(minFrac, maxFrac));
 	}
 
 	if (totalPixels <= 0) return;

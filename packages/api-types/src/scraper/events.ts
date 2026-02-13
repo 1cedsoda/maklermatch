@@ -53,9 +53,19 @@ export interface ScraperToServerEvents {
 	[SocketEvents.LOG_LINE]: (data: LogLinePayload) => void;
 }
 
+export interface ScraperStatusAck {
+	isRunning: boolean;
+	lastRunAt: string | null;
+	memoryMb?: {
+		rss: number;
+		heapUsed: number;
+		heapTotal: number;
+	};
+}
+
 export interface ServerToScraperEvents {
 	[SocketEvents.SCRAPER_STATUS]: (
-		ack: (response: { isRunning: boolean; lastRunAt: string | null }) => void,
+		ack: (response: ScraperStatusAck) => void,
 	) => void;
 	[SocketEvents.SCRAPER_TRIGGER]: (
 		data: ScraperTriggerPayload,

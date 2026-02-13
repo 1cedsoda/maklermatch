@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
 	Table,
 	TableBody,
@@ -191,6 +192,7 @@ export function ListingDetailPage() {
 							<TableHead>Price</TableHead>
 							<TableHead>Location</TableHead>
 							<TableHead>Seen At</TableHead>
+							<TableHead>HTML</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -201,6 +203,20 @@ export function ListingDetailPage() {
 								<TableCell>{v.price ?? "-"}</TableCell>
 								<TableCell>{v.location ?? "-"}</TableCell>
 								<TableCell>{new Date(v.seenAt).toLocaleString()}</TableCell>
+								<TableCell>
+									{v.hasHtml ? (
+										<Button variant="ghost" size="xs" asChild>
+											<a
+												href={`/api/listings/${listing.id}/abstract-snapshots/${v.id}/html`}
+												download
+											>
+												Download
+											</a>
+										</Button>
+									) : (
+										"-"
+									)}
+								</TableCell>
 							</TableRow>
 						))}
 					</TableBody>
@@ -221,6 +237,7 @@ export function ListingDetailPage() {
 								<TableHead>Images</TableHead>
 								<TableHead>Seller</TableHead>
 								<TableHead>Seen At</TableHead>
+								<TableHead>HTML</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -244,6 +261,20 @@ export function ListingDetailPage() {
 										)}
 									</TableCell>
 									<TableCell>{new Date(d.seenAt).toLocaleString()}</TableCell>
+									<TableCell>
+										{d.hasHtml ? (
+											<Button variant="ghost" size="xs" asChild>
+												<a
+													href={`/api/listings/${listing.id}/detail-snapshots/${d.id}/html`}
+													download
+												>
+													Download
+												</a>
+											</Button>
+										) : (
+											"-"
+										)}
+									</TableCell>
 								</TableRow>
 							))}
 						</TableBody>

@@ -20,6 +20,7 @@ export const detailPageSchema = z.object({
 	longitude: z.number().nullable(),
 	viewCount: z.number().nullable(),
 	seller: ingestSellerInfoSchema,
+	html: z.string().optional(),
 });
 
 export type DetailPage = z.infer<typeof detailPageSchema>;
@@ -40,6 +41,7 @@ export const ingestListingSchema = z.object({
 	imageCount: z.number(),
 	isPrivate: z.boolean(),
 	tags: z.array(z.string()),
+	abstractHtml: z.string().nullable().optional(),
 	detailPage: detailPageSchema.optional(),
 });
 

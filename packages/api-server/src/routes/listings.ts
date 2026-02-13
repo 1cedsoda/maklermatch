@@ -11,6 +11,13 @@ import {
 
 const router = Router();
 
+function stripHtml<T extends { html: string | null }>(
+	row: T,
+): Omit<T, "html"> & { hasHtml: boolean } {
+	const { html, ...rest } = row;
+	return { ...rest, hasHtml: html != null };
+}
+
 router.get("/", (req, res) => {
 	const page = Math.max(1, Number(req.query.page) || 1);
 	const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
@@ -58,7 +65,7 @@ router.get("/", (req, res) => {
 
 		return {
 			...listing,
-			latestVersion: latestVersion ?? null,
+			latestVersion: latestVersion ? stripHtml(latestVersion) : null,
 			sellerId: latestDetail?.sellerId ?? null,
 			sellerName: latestDetail?.sellerName ?? null,
 		};
@@ -113,7 +120,52 @@ router.get("/:id", (req, res) => {
 		}
 	}
 
-	res.json({ ...listing, versions, detailSnapshots, seller });
+	res.json({
+		...listing,
+		versions: versions.map(stripHtml),
+		detailSnapshots: detailSnapshots.map(stripHtml),
+		seller,
+	});
+});
+
+router.get("/:id/abstract-snapshots/:snapshotId/html", (req, res) => {
+	const snapshot = db
+		.select({ html: listingAbstractSnapshots.html })
+		.from(listingAbstractSnapshots)
+		.where(eq(listingAbstractSnapshots.id, Number(req.params.snapshotId)))
+		.get();
+
+	if (!snapshot?.html) {
+		res.status(404).json({ error: "HTML not found" });
+		return;
+	}
+
+	res.setHeader("Content-Type", "text/html");
+	res.setHeader(
+		"Content-Disposition",
+		`attachment; filename="abstract-${req.params.id}-${req.params.snapshotId}.html"`,
+	);
+	res.send(snapshot.html);
+});
+
+router.get("/:id/detail-snapshots/:snapshotId/html", (req, res) => {
+	const snapshot = db
+		.select({ html: listingDetailSnapshots.html })
+		.from(listingDetailSnapshots)
+		.where(eq(listingDetailSnapshots.id, Number(req.params.snapshotId)))
+		.get();
+
+	if (!snapshot?.html) {
+		res.status(404).json({ error: "HTML not found" });
+		return;
+	}
+
+	res.setHeader("Content-Type", "text/html");
+	res.setHeader(
+		"Content-Disposition",
+		`attachment; filename="detail-${req.params.id}-${req.params.snapshotId}.html"`,
+	);
+	res.send(snapshot.html);
 });
 
 export default router;

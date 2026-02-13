@@ -2,10 +2,11 @@ import { join } from "node:path";
 import { generateIdentity, loadProxies } from "@scraper/humanize";
 import { logger } from "./logger";
 import type { ScrapedListing } from "@scraper/scraping-core";
-import type {
-	IngestListing,
-	ListingCheckResult,
-	KleinanzeigenSearch,
+import {
+	getCategoryById,
+	type IngestListing,
+	type ListingCheckResult,
+	type KleinanzeigenSearch,
 } from "@scraper/api-types";
 import {
 	launchBrowser,
@@ -46,6 +47,7 @@ function toIngestListing(
 		imageCount: listing.imageCount,
 		isPrivate: listing.isPrivate,
 		tags: listing.tags,
+		abstractHtml: (listing.extra?.abstractHtml as string) ?? null,
 		detailPage: detail
 			? {
 					description: detail.description,
@@ -57,6 +59,7 @@ function toIngestListing(
 					longitude: detail.longitude,
 					viewCount: detail.viewCount,
 					seller: detail.seller,
+					html: detail.html,
 				}
 			: undefined,
 	};
@@ -176,12 +179,16 @@ function createScrapeHandler(
 export async function executeScrapePass(
 	apiClient: ApiClient,
 	search: KleinanzeigenSearch,
-	opts?: { questId?: number; maxPages?: number },
+	opts?: { questId?: number; maxPages?: number; headless?: boolean },
 ) {
 	const city = search.location;
 	const maxPages = opts?.maxPages;
 	const questId = opts?.questId;
-	log.info({ city, search, questId, maxPages }, "Starting scrape pass");
+	const headless = opts?.headless;
+	log.info(
+		{ city, search, questId, maxPages, headless },
+		"Starting scrape pass",
+	);
 
 	if (!questId) {
 		throw new Error("questId is required to start a scraping task");
@@ -190,15 +197,21 @@ export async function executeScrapePass(
 	const { taskId } = await apiClient.scrapeStart(questId, { maxPages });
 
 	const identity = await generateIdentity(loadProxies(PROXIES_PATH));
-	const { browser, page } = await launchBrowser(identity);
+	const { browser, page } = await launchBrowser(identity, {
+		...(headless !== undefined && { headless }),
+	});
 
 	try {
 		// ── Navigation ──
+		const categoryInfo = getCategoryById(search.category);
+		if (!categoryInfo) {
+			throw new Error(`Unknown category: ${search.category}`);
+		}
 		log.info("Navigating to Kleinanzeigen...");
 		const kleinanzeigenPage = await searchViaStartpage(page);
 		await dismissCookieBanner(kleinanzeigenPage);
-		await navigateToCategory(kleinanzeigenPage);
-		if (search.category === "haus-zum-kauf" && search.isPrivate) {
+		await navigateToCategory(kleinanzeigenPage, categoryInfo);
+		if (search.isPrivate) {
 			await filterPrivateListings(kleinanzeigenPage);
 		}
 		await setLocation(kleinanzeigenPage, city);

@@ -25,6 +25,7 @@ export interface KleinanzeigenListingDetail {
 	longitude: number | null;
 	viewCount: number | null;
 	seller: SellerInfo;
+	html: string;
 }
 
 function normalize(text: string | null | undefined): string | null {
@@ -46,11 +47,17 @@ function parseCoord(value: string | null | undefined): number | null {
 	return isNaN(num) ? null : num;
 }
 
+function ensureAbsoluteUrl(url: string): string {
+	if (!url) return url;
+	if (url.startsWith("http")) return url;
+	return `https://www.kleinanzeigen.de${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
 export function extractListingDetail(
 	doc: Document,
 ): KleinanzeigenListingDetail {
 	const canonical = doc.querySelector('link[rel="canonical"]');
-	const url = canonical?.getAttribute("href") || "";
+	const url = ensureAbsoluteUrl(canonical?.getAttribute("href") || "");
 	const idMatch = url.match(/\/(\d+)-\d+-\d+$/);
 	const id = idMatch ? idMatch[1] : "";
 
@@ -119,13 +126,25 @@ export function extractListingDetail(
 	const viewCount = viewCountRaw ? parseInt(viewCountRaw, 10) : null;
 
 	const descContainer = doc.querySelector("#viewad-description .l-container");
-	const description = normalize(descContainer?.textContent) || "";
+	let description = "";
+	if (descContainer) {
+		const clone = descContainer.cloneNode(true) as Element;
+		for (const el of Array.from(clone.querySelectorAll("style, script"))) {
+			el.remove();
+		}
+		description = normalize(clone.textContent) || "";
+	}
 
 	// Seller info
 	const contactEl = doc.querySelector("#viewad-contact");
-	const sellerNameEl = contactEl?.querySelector(".userprofile-vip a");
-	const sellerName = normalize(sellerNameEl?.textContent);
-	const sellerHref = sellerNameEl?.getAttribute("href") || "";
+	const sellerNameLink = contactEl?.querySelector(".userprofile-vip a");
+	const sellerNameEl =
+		sellerNameLink ?? contactEl?.querySelector(".userprofile-vip");
+	const sellerNameRaw = normalize(sellerNameEl?.textContent);
+	// Private sellers show "Privat" as the link text — not a real name
+	const sellerName =
+		sellerNameRaw && !/^privat$/i.test(sellerNameRaw) ? sellerNameRaw : null;
+	const sellerHref = sellerNameLink?.getAttribute("href") || "";
 	const userIdMatch = sellerHref.match(/userId=(\d+)/);
 	const userId = userIdMatch ? userIdMatch[1] : null;
 
@@ -155,7 +174,16 @@ export function extractListingDetail(
 	const otherAdsEl = contactEl?.querySelector("#poster-other-ads-link");
 	const otherAdsRaw = otherAdsEl?.textContent?.trim() || "";
 	const otherAdsMatch = otherAdsRaw.match(/(\d+)/);
-	const otherAdsCount = otherAdsMatch ? parseInt(otherAdsMatch[1], 10) : null;
+	const bizNumAdsEl = doc.querySelector(".bizteaser--numads");
+	const bizNumAdsRaw = bizNumAdsEl?.textContent?.trim() || "";
+	const bizNumAdsMatch = bizNumAdsRaw.match(/(\d+)/);
+	const otherAdsCount = otherAdsMatch
+		? parseInt(otherAdsMatch[1], 10)
+		: bizNumAdsMatch
+			? parseInt(bizNumAdsMatch[1], 10)
+			: null;
+
+	const html = doc.documentElement?.outerHTML ?? "";
 
 	return {
 		id,
@@ -181,6 +209,7 @@ export function extractListingDetail(
 			activeSince,
 			otherAdsCount,
 		},
+		html,
 	};
 }
 
@@ -207,8 +236,14 @@ export async function scrapeListingDetail(
 			return isNaN(num) ? null : num;
 		}
 
+		function absUrl(u: string): string {
+			if (!u) return u;
+			if (u.startsWith("http")) return u;
+			return `https://www.kleinanzeigen.de${u.startsWith("/") ? "" : "/"}${u}`;
+		}
+
 		const canonical = document.querySelector('link[rel="canonical"]');
-		const url = canonical?.getAttribute("href") || "";
+		const url = absUrl(canonical?.getAttribute("href") || "");
 		const idMatch = url.match(/\/(\d+)-\d+-\d+$/);
 		const id = idMatch ? idMatch[1] : "";
 
@@ -279,13 +314,25 @@ export async function scrapeListingDetail(
 		const descContainer = document.querySelector(
 			"#viewad-description .l-container",
 		);
-		const description = norm(descContainer?.textContent) || "";
+		let description = "";
+		if (descContainer) {
+			const clone = descContainer.cloneNode(true) as Element;
+			for (const el of Array.from(clone.querySelectorAll("style, script"))) {
+				el.remove();
+			}
+			description = norm(clone.textContent) || "";
+		}
 
 		// Seller info
 		const contactEl = document.querySelector("#viewad-contact");
-		const sellerNameEl = contactEl?.querySelector(".userprofile-vip a");
-		const sellerName = norm(sellerNameEl?.textContent);
-		const sellerHref = sellerNameEl?.getAttribute("href") || "";
+		const sellerNameLink = contactEl?.querySelector(".userprofile-vip a");
+		const sellerNameEl =
+			sellerNameLink ?? contactEl?.querySelector(".userprofile-vip");
+		const sellerNameRaw = norm(sellerNameEl?.textContent);
+		// Private sellers show "Privat" as the link text — not a real name
+		const sellerName =
+			sellerNameRaw && !/^privat$/i.test(sellerNameRaw) ? sellerNameRaw : null;
+		const sellerHref = sellerNameLink?.getAttribute("href") || "";
 		const userIdMatch = sellerHref.match(/userId=(\d+)/);
 		const userId = userIdMatch ? userIdMatch[1] : null;
 
@@ -315,7 +362,16 @@ export async function scrapeListingDetail(
 		const otherAdsEl = contactEl?.querySelector("#poster-other-ads-link");
 		const otherAdsRaw = otherAdsEl?.textContent?.trim() || "";
 		const otherAdsMatch = otherAdsRaw.match(/(\d+)/);
-		const otherAdsCount = otherAdsMatch ? parseInt(otherAdsMatch[1], 10) : null;
+		const bizNumAdsEl = document.querySelector(".bizteaser--numads");
+		const bizNumAdsRaw = bizNumAdsEl?.textContent?.trim() || "";
+		const bizNumAdsMatch = bizNumAdsRaw.match(/(\d+)/);
+		const otherAdsCount = otherAdsMatch
+			? parseInt(otherAdsMatch[1], 10)
+			: bizNumAdsMatch
+				? parseInt(bizNumAdsMatch[1], 10)
+				: null;
+
+		const html = document.documentElement.outerHTML;
 
 		return {
 			id,
@@ -341,6 +397,7 @@ export async function scrapeListingDetail(
 				activeSince,
 				otherAdsCount,
 			},
+			html,
 		};
 	});
 }

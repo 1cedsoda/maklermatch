@@ -29,7 +29,16 @@ export function setupScraperHandlers(
 	apiClient: ApiClient,
 ) {
 	socket.on(SocketEvents.SCRAPER_STATUS, (ack) => {
-		ack({ isRunning, lastRunAt });
+		const mem = process.memoryUsage();
+		ack({
+			isRunning,
+			lastRunAt,
+			memoryMb: {
+				rss: Math.round(mem.rss / 1024 / 1024),
+				heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
+				heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
+			},
+		});
 	});
 
 	socket.on(SocketEvents.SCRAPER_TRIGGER, async (data, ack) => {
@@ -38,9 +47,9 @@ export function setupScraperHandlers(
 			return;
 		}
 		ack({ ok: true });
-		const { kleinanzeigenSearch, questId, maxPages } = data;
+		const { kleinanzeigenSearch, questId, maxPages, headless } = data;
 		log.info(
-			{ search: kleinanzeigenSearch, questId, maxPages },
+			{ search: kleinanzeigenSearch, questId, maxPages, headless },
 			"Scrape triggered by server",
 		);
 		setRunning();
@@ -48,6 +57,7 @@ export function setupScraperHandlers(
 			await executeScrapePass(apiClient, kleinanzeigenSearch, {
 				questId,
 				maxPages,
+				headless,
 			});
 		} finally {
 			setIdle();

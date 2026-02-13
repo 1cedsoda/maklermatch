@@ -97,6 +97,7 @@ function insertAbstractVersion(
 			tags: item.tags,
 			seenAt: now,
 			scrapingTaskId,
+			html: item.abstractHtml ?? null,
 		})
 		.returning()
 		.get();
@@ -129,6 +130,7 @@ function insertDetailSnapshot(
 			sellerType: detail.seller.type,
 			seenAt: now,
 			scrapingTaskId,
+			html: detail.html ?? null,
 		})
 		.returning()
 		.get();

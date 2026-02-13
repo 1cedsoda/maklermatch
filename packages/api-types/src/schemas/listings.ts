@@ -44,6 +44,7 @@ export const listingAbstractSnapshotSchema = z.object({
 	tags: z.array(z.string()),
 	seenAt: z.string(),
 	scrapingTaskId: z.number().nullable(),
+	hasHtml: z.boolean(),
 });
 
 // ─── Listing Detail Snapshot ─────────────────────────────────
@@ -63,6 +64,7 @@ export const listingDetailSnapshotSchema = z.object({
 	sellerId: z.number().nullable(),
 	seenAt: z.string(),
 	scrapingTaskId: z.number().nullable(),
+	hasHtml: z.boolean(),
 });
 
 // ─── Listing Schemas ─────────────────────────────────────────

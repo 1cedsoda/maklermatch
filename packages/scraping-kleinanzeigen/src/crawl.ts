@@ -175,7 +175,7 @@ function parsePageListings(html: string) {
 		imageCount: l.imageCount,
 		isPrivate: l.isPrivate,
 		tags: l.tags,
-		extra: { distance: l.distance },
+		extra: { distance: l.distance, abstractHtml: l.html },
 	}));
 }
 
@@ -189,16 +189,17 @@ export async function scrapeIncrementally(
 	handler: ScrapeHandler,
 	options?: { maxPages?: number },
 ): Promise<ScrapeResult> {
-	const detailQueue: { id: string; url: string }[] = [];
 	let pagesScraped = 0;
 	let listingsFound = 0;
+	let detailsScraped = 0;
+	let detailsFailed = 0;
+	let nextUrl: string | null = null;
 
 	log.info(
 		{ maxPages: options?.maxPages ?? "unlimited" },
 		"Starting incremental scrape...",
 	);
 
-	// ── Phase 1: Crawl listing pages ──
 	while (true) {
 		pagesScraped++;
 		log.info({ page: pagesScraped }, "Capturing HTML...");
@@ -219,6 +220,12 @@ export async function scrapeIncrementally(
 		);
 		const urlMap = new Map(articleData.map(({ id, href }) => [id, href]));
 
+		// Grab next page URL before navigating away to detail pages
+		nextUrl = await page.evaluate(() => {
+			const el = document.querySelector<HTMLAnchorElement>("a.pagination-next");
+			return el?.getAttribute("href") || null;
+		});
+
 		// Parse listings from HTML
 		const parsed = parsePageListings(html);
 		listingsFound += parsed.length;
@@ -230,87 +237,72 @@ export async function scrapeIncrementally(
 		// Call handler — ingests non-detail listings, returns IDs needing details
 		const { detailNeeded } = await handler.onListingsDiscovered(parsed);
 		const detailSet = new Set(detailNeeded);
+		const pageDetailQueue: { id: string; url: string }[] = [];
 		for (const [id, href] of urlMap) {
 			if (detailSet.has(id)) {
-				detailQueue.push({ id, url: href });
+				pageDetailQueue.push({ id, url: href });
 			}
 		}
 		log.info(
-			{ detailQueued: detailSet.size, totalQueued: detailQueue.length },
-			"Detail queue updated",
+			{ detailQueued: pageDetailQueue.length, page: pagesScraped },
+			"Detail queue for page",
 		);
+
+		// Visit detail pages for this listing page
+		if (pageDetailQueue.length > 0) {
+			const shuffled = shuffle(pageDetailQueue);
+			for (let i = 0; i < shuffled.length; i++) {
+				const { url } = shuffled[i];
+				const fullUrl = url.startsWith("http") ? url : `${BASE_URL}${url}`;
+				log.info(
+					{ index: i + 1, total: shuffled.length, url: fullUrl },
+					"Visiting detail page...",
+				);
+
+				try {
+					await humanBrowse(page);
+					await page.goto(fullUrl, { waitUntil: "domcontentloaded" });
+					log.info({ url: page.url() }, "Landed on detail page");
+					await page.waitForSelector("#viewad-title", { timeout: 15000 });
+					await humanScroll(page);
+
+					const detail = await scrapeListingDetail(page);
+					await handler.onDetailScraped(detail);
+					detailsScraped++;
+					log.info(
+						{ index: i + 1, id: detail.id, title: detail.title },
+						"Detail extracted and ingested",
+					);
+				} catch (err) {
+					detailsFailed++;
+					log.warn(
+						{ url: fullUrl, err },
+						"Failed to visit detail page, skipping",
+					);
+				}
+			}
+		}
 
 		if (options?.maxPages && pagesScraped >= options.maxPages) {
 			log.info({ maxPages: options.maxPages }, "Reached maxPages limit");
 			break;
 		}
 
-		const nextUrl = await page.evaluate(() => {
-			const el = document.querySelector<HTMLAnchorElement>("a.pagination-next");
-			return el?.getAttribute("href") || null;
-		});
-
 		if (!nextUrl) {
 			log.info("No next page link found, stopping");
 			break;
 		}
 
-		const fullUrl = `${BASE_URL}${nextUrl}`;
+		const fullNextUrl = `${BASE_URL}${nextUrl}`;
 		log.info(
-			{ page: pagesScraped, nextUrl: fullUrl },
+			{ page: pagesScraped, nextUrl: fullNextUrl },
 			"Navigating to next page...",
 		);
 		await humanBrowse(page);
-		await page.goto(fullUrl, { waitUntil: "domcontentloaded" });
+		await page.goto(fullNextUrl, { waitUntil: "domcontentloaded" });
 		log.info({ url: page.url() }, "Landed on next page");
 		await page.waitForSelector("#srchrslt-adtable");
 		await humanScroll(page);
-	}
-
-	log.info(
-		{ totalPages: pagesScraped, totalListings: listingsFound },
-		"Listing page crawl complete",
-	);
-
-	// ── Phase 2: Visit detail pages ──
-	let detailsScraped = 0;
-	let detailsFailed = 0;
-	if (detailQueue.length > 0) {
-		const shuffled = shuffle(detailQueue);
-		log.info({ count: shuffled.length }, "Visiting detail pages...");
-
-		for (let i = 0; i < shuffled.length; i++) {
-			const { url } = shuffled[i];
-			const fullUrl = url.startsWith("http") ? url : `${BASE_URL}${url}`;
-			log.info(
-				{ index: i + 1, total: shuffled.length, url: fullUrl },
-				"Visiting detail page...",
-			);
-
-			try {
-				await humanBrowse(page);
-				await page.goto(fullUrl, { waitUntil: "domcontentloaded" });
-				log.info({ url: page.url() }, "Landed on detail page");
-				await page.waitForSelector("#viewad-title", { timeout: 15000 });
-				await humanScroll(page);
-
-				const detail = await scrapeListingDetail(page);
-				await handler.onDetailScraped(detail);
-				detailsScraped++;
-				log.info(
-					{ index: i + 1, id: detail.id, title: detail.title },
-					"Detail extracted and ingested",
-				);
-			} catch (err) {
-				detailsFailed++;
-				log.warn(
-					{ url: fullUrl, err },
-					"Failed to visit detail page, skipping",
-				);
-			}
-		}
-	} else {
-		log.info("No detail pages to visit");
 	}
 
 	log.info(

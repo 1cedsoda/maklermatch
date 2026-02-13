@@ -23,6 +23,7 @@ import {
 import { pushLogLine } from "../services/log-buffer";
 import { getQuestById } from "../services/quests";
 import { logger } from "../logger";
+import { generateScraperName, releaseScraperName } from "../lib/scraper-names";
 
 const log = logger.child({ module: "socket" });
 
@@ -32,6 +33,7 @@ type TypedSocket = Socket<ScraperToServerEvents, ServerToScraperEvents>;
 interface ScraperInfo {
 	source: string;
 	cities: string[];
+	name: string;
 	socket: TypedSocket;
 }
 
@@ -60,9 +62,11 @@ export function getConnectedScrapers(): {
 	id: string;
 	source: string;
 	cities: string[];
+	name: string;
 }[] {
 	return Array.from(scrapers.entries()).map(([id, info]) => ({
 		id,
+		name: info.name,
 		source: info.source,
 		cities: info.cities,
 	}));
@@ -86,8 +90,9 @@ export function setupScraperSocket(server: SocketIOServer) {
 
 		socket.on("disconnect", (reason) => {
 			const info = scrapers.get(socket.id);
+			if (info) releaseScraperName(info.name);
 			log.info(
-				{ id: socket.id, source: info?.source, reason },
+				{ id: socket.id, name: info?.name, source: info?.source, reason },
 				"Scraper disconnected",
 			);
 			scrapers.delete(socket.id);
@@ -99,13 +104,15 @@ export function setupScraperSocket(server: SocketIOServer) {
 			if (!parsed.success) {
 				return;
 			}
+			const name = generateScraperName();
 			scrapers.set(socket.id, {
 				source: parsed.data.source,
 				cities: parsed.data.cities,
+				name,
 				socket,
 			});
 			log.info(
-				{ source: parsed.data.source, cities: parsed.data.cities },
+				{ name, source: parsed.data.source, cities: parsed.data.cities },
 				"Scraper registered",
 			);
 			ack({ ok: true });

@@ -84,6 +84,7 @@ router.post("/start", async (req, res) => {
 				kleinanzeigenSearch: questToKleinanzeigenSearch(quest),
 				questId,
 				maxPages: req.body.maxPages ?? quest.maxPages ?? undefined,
+				headless: req.body.headless,
 			});
 		res.json(result);
 	} catch {

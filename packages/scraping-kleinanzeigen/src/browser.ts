@@ -8,6 +8,12 @@ export async function launchBrowser(
 	identity: BrowserIdentity,
 	{ headless = process.env.HEADLESS !== "false" } = {},
 ) {
+	// Force headless on Linux when no display is available
+	if (!headless && process.platform === "linux" && !process.env.DISPLAY) {
+		log.warn("No DISPLAY available, forcing headless mode");
+		headless = true;
+	}
+
 	log.info(
 		{
 			proxy: identity.proxy.server,
