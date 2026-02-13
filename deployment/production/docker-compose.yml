@@ -5,10 +5,22 @@ services:
       dockerfile: packages/api-server/Dockerfile
     container_name: api-server
     restart: unless-stopped
+    ports:
+      - "25:2525"
     environment:
       - PORT=3001
       - NODE_ENV=production
       - TZ=Europe/Berlin
+      # Email - inbound SMTP receiver
+      - SMTP_RECEIVER_PORT=2525
+      - SMTP_RECEIVER_DOMAIN=${SMTP_DOMAIN}
+      # Email - outbound SMTP relay
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT:-465}
+      - SMTP_SECURE=${SMTP_SECURE:-true}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_FROM=${SMTP_FROM}
     volumes:
       - scraper-data:/app/packages/api-server/data
     networks:
