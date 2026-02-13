@@ -13,6 +13,21 @@
 
 	log {
 		output stdout
-		format console
+		format filter {
+			wrap console
+			fields {
+				request>headers delete
+				request>remote_ip delete
+				request>remote_port delete
+				request>client_ip delete
+				request>proto delete
+				request>host delete
+				resp_headers delete
+				bytes_read delete
+				user_id delete
+				size delete
+				duration delete
+			}
+		}
 	}
 }
