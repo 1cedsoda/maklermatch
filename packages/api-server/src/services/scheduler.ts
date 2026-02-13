@@ -1,8 +1,8 @@
 import { SocketEvents } from "@scraper/api-types";
 import { logger } from "../logger";
-import { getActiveQuests, questToKleinanzeigenSearch } from "./quests";
+import { getActiveTargets, targetToKleinanzeigenSearch } from "./targets";
 import { getScraperSocket, isScraperRunning } from "../socket/scraper";
-import type { searchQuests } from "../db/schema";
+import type { searchTargets } from "../db/schema";
 
 const log = logger.child({ module: "scheduler" });
 
@@ -10,14 +10,14 @@ const WAKEFULNESS_START = 7;
 const WAKEFULNESS_END = 23;
 const BUSY_RETRY_MS = 2 * 60_000 + Math.random() * 3 * 60_000; // 2-5 min
 
-type Quest = typeof searchQuests.$inferSelect;
+type Target = typeof searchTargets.$inferSelect;
 
-interface ScheduledQuest {
-	quest: Quest;
+interface ScheduledTarget {
+	target: Target;
 	nextRunAt: number;
 }
 
-let scheduledQuests: ScheduledQuest[] = [];
+let scheduledTargets: ScheduledTarget[] = [];
 let timer: ReturnType<typeof setTimeout> | null = null;
 let running = false;
 
@@ -36,17 +36,17 @@ function msUntilWakefulness(): number {
 	return wake.getTime() - now.getTime();
 }
 
-function randomInterval(quest: Quest): number {
-	const minMs = quest.minIntervalMinutes * 60_000;
-	const maxMs = quest.maxIntervalMinutes * 60_000;
+function randomInterval(target: Target): number {
+	const minMs = target.minIntervalMinutes * 60_000;
+	const maxMs = target.maxIntervalMinutes * 60_000;
 	return minMs + Math.random() * (maxMs - minMs);
 }
 
-async function triggerQuest(quest: Quest): Promise<boolean> {
+async function triggerTarget(target: Target): Promise<boolean> {
 	if (isScraperRunning()) {
 		log.info(
-			{ questId: quest.id, name: quest.name },
-			"Scraper busy, delaying quest",
+			{ targetId: target.id, name: target.name },
+			"Scraper busy, delaying target",
 		);
 		return false;
 	}
@@ -54,15 +54,20 @@ async function triggerQuest(quest: Quest): Promise<boolean> {
 	const socket = getScraperSocket();
 	if (!socket) {
 		log.warn(
-			{ questId: quest.id, name: quest.name },
+			{ targetId: target.id, name: target.name },
 			"No scraper connected, skipping",
 		);
 		return false;
 	}
 
-	const search = questToKleinanzeigenSearch(quest);
+	const search = targetToKleinanzeigenSearch(target);
 	log.info(
-		{ questId: quest.id, name: quest.name, search, maxPages: quest.maxPages },
+		{
+			targetId: target.id,
+			name: target.name,
+			search,
+			maxPages: target.maxPages,
+		},
 		"Triggering scrape",
 	);
 
@@ -71,45 +76,45 @@ async function triggerQuest(quest: Quest): Promise<boolean> {
 			.timeout(10_000)
 			.emitWithAck(SocketEvents.SCRAPER_TRIGGER, {
 				kleinanzeigenSearch: search,
-				questId: quest.id,
-				maxPages: quest.maxPages ?? undefined,
+				targetId: target.id,
+				maxPages: target.maxPages ?? undefined,
 			});
 
 		if ("error" in result) {
 			log.warn(
-				{ questId: quest.id, error: result.error },
+				{ targetId: target.id, error: result.error },
 				"Scraper rejected trigger",
 			);
 			return false;
 		}
 
 		log.info(
-			{ questId: quest.id, name: quest.name },
+			{ targetId: target.id, name: target.name },
 			"Scrape triggered successfully",
 		);
 		return true;
 	} catch (err) {
-		log.error({ questId: quest.id, err }, "Failed to trigger scraper");
+		log.error({ targetId: target.id, err }, "Failed to trigger scraper");
 		return false;
 	}
 }
 
-export function reloadQuests(): void {
-	const active = getActiveQuests();
-	const existingMap = new Map(scheduledQuests.map((sq) => [sq.quest.id, sq]));
+export function reloadTargets(): void {
+	const active = getActiveTargets();
+	const existingMap = new Map(scheduledTargets.map((st) => [st.target.id, st]));
 	const now = Date.now();
 
-	scheduledQuests = active.map((quest) => {
-		const existing = existingMap.get(quest.id);
+	scheduledTargets = active.map((target) => {
+		const existing = existingMap.get(target.id);
 		if (existing) {
-			return { quest, nextRunAt: existing.nextRunAt };
+			return { target, nextRunAt: existing.nextRunAt };
 		}
 		const jitter = 60_000 + Math.random() * 240_000;
-		return { quest, nextRunAt: now + jitter };
+		return { target, nextRunAt: now + jitter };
 	});
 
-	scheduledQuests.sort((a, b) => a.nextRunAt - b.nextRunAt);
-	log.info({ count: scheduledQuests.length }, "Reloaded active quests");
+	scheduledTargets.sort((a, b) => a.nextRunAt - b.nextRunAt);
+	log.info({ count: scheduledTargets.length }, "Reloaded active targets");
 
 	scheduleNextTick();
 }
@@ -127,18 +132,18 @@ function scheduleNextTick(): void {
 			{ hours, wakeAt: `${WAKEFULNESS_START}:00` },
 			"Outside wakefulness hours, sleeping",
 		);
-		timer = setTimeout(() => reloadQuests(), ms);
+		timer = setTimeout(() => reloadTargets(), ms);
 		return;
 	}
 
-	if (scheduledQuests.length === 0) {
-		log.info("No active quests, scheduler idle");
-		timer = setTimeout(() => reloadQuests(), 5 * 60_000);
+	if (scheduledTargets.length === 0) {
+		log.info("No active targets, scheduler idle");
+		timer = setTimeout(() => reloadTargets(), 5 * 60_000);
 		return;
 	}
 
 	const now = Date.now();
-	const next = scheduledQuests[0];
+	const next = scheduledTargets[0];
 	const delay = Math.max(0, next.nextRunAt - now);
 
 	timer = setTimeout(async () => {
@@ -146,22 +151,22 @@ function scheduleNextTick(): void {
 		running = true;
 
 		try {
-			const sq = scheduledQuests.shift()!;
-			const triggered = await triggerQuest(sq.quest);
+			const st = scheduledTargets.shift()!;
+			const triggered = await triggerTarget(st.target);
 
-			const freshActive = getActiveQuests();
-			const stillActive = freshActive.find((q) => q.id === sq.quest.id);
+			const freshActive = getActiveTargets();
+			const stillActive = freshActive.find((t) => t.id === st.target.id);
 			if (stillActive) {
 				// If scraper was busy, retry sooner instead of full interval
 				const nextDelay = triggered
 					? randomInterval(stillActive)
 					: BUSY_RETRY_MS;
 				const nextRun = Date.now() + nextDelay;
-				scheduledQuests.push({ quest: stillActive, nextRunAt: nextRun });
-				scheduledQuests.sort((a, b) => a.nextRunAt - b.nextRunAt);
+				scheduledTargets.push({ target: stillActive, nextRunAt: nextRun });
+				scheduledTargets.sort((a, b) => a.nextRunAt - b.nextRunAt);
 				const minutes = Math.round((nextRun - Date.now()) / 60_000);
 				log.info(
-					{ questId: sq.quest.id, name: sq.quest.name, minutes },
+					{ targetId: st.target.id, name: st.target.name, minutes },
 					"Next run scheduled",
 				);
 			}
@@ -174,13 +179,16 @@ function scheduleNextTick(): void {
 
 export function startScheduler(): void {
 	log.info("Scheduler starting");
-	reloadQuests();
+	reloadTargets();
 }
 
-export function getSchedulerState(): { questId: number; nextRunAt: number }[] {
-	return scheduledQuests.map((sq) => ({
-		questId: sq.quest.id,
-		nextRunAt: sq.nextRunAt,
+export function getSchedulerState(): {
+	targetId: number;
+	nextRunAt: number;
+}[] {
+	return scheduledTargets.map((st) => ({
+		targetId: st.target.id,
+		nextRunAt: st.nextRunAt,
 	}));
 }
 
@@ -189,6 +197,6 @@ export function stopScheduler(): void {
 		clearTimeout(timer);
 		timer = null;
 	}
-	scheduledQuests = [];
+	scheduledTargets = [];
 	log.info("Scheduler stopped");
 }

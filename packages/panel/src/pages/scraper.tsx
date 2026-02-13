@@ -121,14 +121,14 @@ export function ScraperPage() {
 										</div>
 										<div className="text-sm">
 											<Link
-												to={`/quests/${status.currentTask.questId}`}
+												to={`/targets/${status.currentTask.targetId}`}
 												className="text-primary font-medium underline-offset-4 hover:underline"
 											>
-												{status.currentTask.questName}
+												{status.currentTask.targetName}
 											</Link>
 											<span className="text-muted-foreground">
 												{" "}
-												&middot; {status.currentTask.questLocation}
+												&middot; {status.currentTask.targetLocation}
 											</span>
 										</div>
 										<Link

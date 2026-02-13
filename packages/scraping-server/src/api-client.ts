@@ -34,12 +34,12 @@ export class ApiClient {
 	}
 
 	async scrapeStart(
-		questId: number,
+		targetId: number,
 		opts?: { maxPages?: number },
 	): Promise<ScrapeStartAck> {
 		await this.waitForConnection(RECONNECT_TIMEOUT);
 		return this.socket.timeout(10000).emitWithAck(SocketEvents.SCRAPE_START, {
-			questId,
+			targetId,
 			maxPages: opts?.maxPages,
 		});
 	}

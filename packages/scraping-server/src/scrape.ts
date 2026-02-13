@@ -179,22 +179,22 @@ function createScrapeHandler(
 export async function executeScrapePass(
 	apiClient: ApiClient,
 	search: KleinanzeigenSearch,
-	opts?: { questId?: number; maxPages?: number; headless?: boolean },
+	opts?: { targetId?: number; maxPages?: number; headless?: boolean },
 ) {
 	const city = search.location;
 	const maxPages = opts?.maxPages;
-	const questId = opts?.questId;
+	const targetId = opts?.targetId;
 	const headless = opts?.headless;
 	log.info(
-		{ city, search, questId, maxPages, headless },
+		{ city, search, targetId, maxPages, headless },
 		"Starting scrape pass",
 	);
 
-	if (!questId) {
-		throw new Error("questId is required to start a scraping task");
+	if (!targetId) {
+		throw new Error("targetId is required to start a scraping task");
 	}
 
-	const { taskId } = await apiClient.scrapeStart(questId, { maxPages });
+	const { taskId } = await apiClient.scrapeStart(targetId, { maxPages });
 
 	const identity = await generateIdentity(loadProxies(PROXIES_PATH));
 	const { browser, page } = await launchBrowser(identity, {

@@ -9,8 +9,8 @@ import { ListingDetailPage } from "@/pages/listing-detail";
 import { ScrapingTasksPage } from "@/pages/scraping-tasks";
 import { ScrapingTaskDetailPage } from "@/pages/scraping-task-detail";
 import { ScraperPage } from "@/pages/scraper";
-import { QuestsPage } from "@/pages/quests";
-import { QuestDetailPage } from "@/pages/quest-detail";
+import { TargetsPage } from "@/pages/targets";
+import { TargetDetailPage } from "@/pages/target-detail";
 import { SellersPage } from "@/pages/sellers";
 import { SellerDetailPage } from "@/pages/seller-detail";
 import { ChatPage } from "@/pages/chat";
@@ -35,8 +35,8 @@ export function App() {
 						<Route path="listings/:id" element={<ListingDetailPage />} />
 						<Route path="sellers" element={<SellersPage />} />
 						<Route path="sellers/:id" element={<SellerDetailPage />} />
-						<Route path="quests" element={<QuestsPage />} />
-						<Route path="quests/:id" element={<QuestDetailPage />} />
+						<Route path="targets" element={<TargetsPage />} />
+						<Route path="targets/:id" element={<TargetDetailPage />} />
 						<Route path="scraping-tasks" element={<ScrapingTasksPage />} />
 						<Route
 							path="scraping-tasks/:id"

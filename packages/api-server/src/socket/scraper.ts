@@ -21,7 +21,7 @@ import {
 	markRemovedListings,
 } from "../services/ingest";
 import { pushLogLine, getLogLines } from "../services/log-buffer";
-import { getQuestById } from "../services/quests";
+import { getTargetById } from "../services/targets";
 import { logger } from "../logger";
 import { generateScraperName, releaseScraperName } from "../lib/scraper-names";
 
@@ -123,7 +123,7 @@ export function setupScraperSocket(server: SocketIOServer) {
 			if (!parsed.success) {
 				return;
 			}
-			const { id } = createScrapingTask(parsed.data.questId, {
+			const { id } = createScrapingTask(parsed.data.targetId, {
 				maxPages: parsed.data.maxPages,
 			});
 			currentScrapingTaskId = id;
@@ -144,10 +144,10 @@ export function setupScraperSocket(server: SocketIOServer) {
 				listings,
 			} = parsed.data;
 
-			// Look up the task and its quest to get the city
+			// Look up the task and its target to get the city
 			const task = getScrapingTask(taskId);
-			const quest = task ? getQuestById(task.questId) : null;
-			const city = quest?.location ?? "";
+			const target = task ? getTargetById(task.targetId) : null;
+			const city = target?.location ?? "";
 
 			const result = ingestListings(city, listings, taskId);
 			updateScrapingTask(taskId, {

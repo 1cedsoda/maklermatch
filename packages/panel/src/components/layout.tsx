@@ -19,7 +19,7 @@ const NAV_ITEMS: { to: string; label: string; icon: LucideIcon }[] = [
 	{ to: "/brokers", label: "Makler", icon: Briefcase },
 	{ to: "/listings", label: "Listings", icon: List },
 	{ to: "/sellers", label: "Sellers", icon: Users },
-	{ to: "/quests", label: "Scraping Quests", icon: Search },
+	{ to: "/targets", label: "Scraping Targets", icon: Search },
 	{ to: "/scraping-tasks", label: "Scraping Tasks", icon: Zap },
 	{ to: "/scraper", label: "Scraper", icon: Bot },
 ];
@@ -32,7 +32,7 @@ export function Layout() {
 			<aside className="w-56 border-r bg-sidebar flex flex-col">
 				<div className="px-5 py-5">
 					<h1 className="text-base font-semibold tracking-tight text-sidebar-foreground">
-						Makler Match
+						Traumwohnung.ai
 					</h1>
 				</div>
 				<nav className="flex-1 flex flex-col gap-0.5 px-3">

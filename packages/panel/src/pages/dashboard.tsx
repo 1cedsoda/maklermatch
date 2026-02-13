@@ -80,7 +80,7 @@ export function DashboardPage() {
 										className="flex items-center justify-between text-sm"
 									>
 										<span className="text-muted-foreground">
-											{t.questName} &middot;{" "}
+											{t.targetName} &middot;{" "}
 											{new Date(t.startedAt).toLocaleString()}
 										</span>
 										<StatusBadge status={t.status} />

@@ -5,7 +5,10 @@ import {
 	getConnectedScrapers,
 	getCurrentScrapingTaskId,
 } from "../socket/scraper";
-import { getQuestById, questToKleinanzeigenSearch } from "../services/quests";
+import {
+	getTargetById,
+	targetToKleinanzeigenSearch,
+} from "../services/targets";
 import { getScrapingTask } from "../services/ingest";
 import { getLogLines, getAllLogLines } from "../services/log-buffer";
 
@@ -28,21 +31,21 @@ router.get("/status", async (_req, res) => {
 		// Augment with current task info from server state
 		let currentTask: {
 			id: number;
-			questId: number;
-			questName: string;
-			questLocation: string;
+			targetId: number;
+			targetName: string;
+			targetLocation: string;
 		} | null = null;
 		const taskId = getCurrentScrapingTaskId();
 		if (taskId) {
 			const task = getScrapingTask(taskId);
 			if (task) {
-				const quest = getQuestById(task.questId);
-				if (quest) {
+				const target = getTargetById(task.targetId);
+				if (target) {
 					currentTask = {
 						id: taskId,
-						questId: quest.id,
-						questName: quest.name,
-						questLocation: quest.location,
+						targetId: target.id,
+						targetName: target.name,
+						targetLocation: target.location,
 					};
 				}
 			}
@@ -59,15 +62,15 @@ router.get("/status", async (_req, res) => {
 });
 
 router.post("/start", async (req, res) => {
-	const questId = Number(req.body.questId);
-	if (!questId) {
-		res.status(400).json({ error: "questId is required" });
+	const targetId = Number(req.body.targetId);
+	if (!targetId) {
+		res.status(400).json({ error: "targetId is required" });
 		return;
 	}
 
-	const quest = getQuestById(questId);
-	if (!quest) {
-		res.status(404).json({ error: "Quest not found" });
+	const target = getTargetById(targetId);
+	if (!target) {
+		res.status(404).json({ error: "Target not found" });
 		return;
 	}
 
@@ -81,9 +84,9 @@ router.post("/start", async (req, res) => {
 		const result = await socket
 			.timeout(5000)
 			.emitWithAck(SocketEvents.SCRAPER_TRIGGER, {
-				kleinanzeigenSearch: questToKleinanzeigenSearch(quest),
-				questId,
-				maxPages: req.body.maxPages ?? quest.maxPages ?? undefined,
+				kleinanzeigenSearch: targetToKleinanzeigenSearch(target),
+				targetId,
+				maxPages: req.body.maxPages ?? target.maxPages ?? undefined,
 				headless: req.body.headless,
 			});
 		res.json(result);

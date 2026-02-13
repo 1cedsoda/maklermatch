@@ -234,13 +234,13 @@ export function checkListings(items: ListingCheckItem[]): ListingCheckResult[] {
 // ─── Scraping Tasks ─────────────────────────────────────────
 
 export function createScrapingTask(
-	questId: number,
+	targetId: number,
 	opts?: { maxPages?: number },
 ): { id: number } {
 	const task = db
 		.insert(scrapingTasks)
 		.values({
-			questId,
+			targetId,
 			status: "pending",
 			maxPages: opts?.maxPages ?? null,
 		})

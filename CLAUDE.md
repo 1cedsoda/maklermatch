@@ -61,11 +61,11 @@ api-server ──→ api-types
 ```
 
 ### Data Flow
-1. **Panel** creates search quests (category/location/criteria) via REST → **api-server**
+1. **Panel** creates search targets (category/location/criteria) via REST → **api-server**
 2. **api-server** scheduler triggers scraping via Socket.io → **scraping-server**
 3. **scraping-server** runs Patchright (Chromium), extracts HTML with happy-dom, sends results back over WebSocket
 4. **api-server** ingestion service upserts listings, creates abstract/detail/seller snapshots, tracks changes
-5. **Panel** displays listings, sellers, quests; **llm** app handles AI chat for broker outreach
+5. **Panel** displays listings, sellers, targets; **llm** app handles AI chat for broker outreach
 
 ### WebSocket Protocol (api-types/src/scraper/events.ts)
 Scraper↔Server communication uses typed Socket.io events: `REGISTER`, `SCRAPE_START`, `SCRAPE_RESULT`, `SCRAPE_ERROR`, `LISTING_CHECK`, `INGEST_LISTINGS`, `LOG_LINE`, `SCRAPER_TRIGGER`, `SCRAPER_STATUS`. Types defined in `ScraperToServerEvents` and `ServerToScraperEvents` interfaces.
@@ -79,7 +79,7 @@ Scraper↔Server communication uses typed Socket.io events: `REGISTER`, `SCRAPE_
 ### Key Directories
 - `packages/api-types/src/scraper/` — Zod schemas and WebSocket event types shared between server and scraper
 - `packages/agent/src/prompts.ts` — All LLM system prompts (centralized)
-- `packages/api-server/src/services/` — Business logic (ingest, scheduler, quests)
+- `packages/api-server/src/services/` — Business logic (ingest, scheduler, targets)
 - `packages/scraping-kleinanzeigen/src/` — HTML extraction and browser automation
 - `packages/scraping-kleinanzeigen/src/fixtures/` — HTML test fixtures
 - `packages/humanize/` — Mouse movement, scrolling, delay, viewport randomization for anti-detection

@@ -2,9 +2,9 @@ import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 
 export const scrapingTasks = sqliteTable("scraping_tasks", {
 	id: integer("id").primaryKey({ autoIncrement: true }),
-	questId: integer("quest_id")
+	targetId: integer("target_id")
 		.notNull()
-		.references(() => searchQuests.id),
+		.references(() => searchTargets.id),
 	startedAt: text("started_at")
 		.notNull()
 		.$defaultFn(() => new Date().toISOString()),
@@ -22,7 +22,7 @@ export const scrapingTasks = sqliteTable("scraping_tasks", {
 	>(),
 });
 
-export const searchQuests = sqliteTable("search_quests", {
+export const searchTargets = sqliteTable("search_targets", {
 	id: integer("id").primaryKey({ autoIncrement: true }),
 	name: text("name").notNull(),
 	active: integer("active", { mode: "boolean" }).notNull().default(false),

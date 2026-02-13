@@ -48,15 +48,15 @@ export function setupScraperHandlers(
 			return;
 		}
 		ack({ ok: true });
-		const { kleinanzeigenSearch, questId, maxPages, headless } = data;
+		const { kleinanzeigenSearch, targetId, maxPages, headless } = data;
 		log.info(
-			{ search: kleinanzeigenSearch, questId, maxPages, headless },
+			{ search: kleinanzeigenSearch, targetId, maxPages, headless },
 			"Scrape triggered by server",
 		);
 		setRunning();
 		try {
 			await executeScrapePass(apiClient, kleinanzeigenSearch, {
-				questId,
+				targetId,
 				maxPages,
 				headless,
 			});

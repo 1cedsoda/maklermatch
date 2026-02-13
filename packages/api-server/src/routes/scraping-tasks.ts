@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { eq, desc } from "drizzle-orm";
 import { db } from "../db";
-import { scrapingTasks, searchQuests } from "../db/schema";
+import { scrapingTasks, searchTargets } from "../db/schema";
 import {
 	getCurrentScrapingTaskId,
 	getConnectedScrapers,
@@ -10,15 +10,15 @@ import {
 const router = Router();
 
 router.get("/", (req, res) => {
-	const questIdFilter = req.query.questId
-		? Number(req.query.questId)
+	const targetIdFilter = req.query.targetId
+		? Number(req.query.targetId)
 		: undefined;
 	const limit = req.query.limit ? Number(req.query.limit) : undefined;
 
 	let query = db
 		.select({
 			id: scrapingTasks.id,
-			questId: scrapingTasks.questId,
+			targetId: scrapingTasks.targetId,
 			startedAt: scrapingTasks.startedAt,
 			status: scrapingTasks.status,
 			maxPages: scrapingTasks.maxPages,
@@ -27,15 +27,15 @@ router.get("/", (req, res) => {
 			detailsScraped: scrapingTasks.detailsScraped,
 			detailsFailed: scrapingTasks.detailsFailed,
 			errorMessage: scrapingTasks.errorMessage,
-			questName: searchQuests.name,
-			questLocation: searchQuests.location,
+			targetName: searchTargets.name,
+			targetLocation: searchTargets.location,
 		})
 		.from(scrapingTasks)
-		.innerJoin(searchQuests, eq(scrapingTasks.questId, searchQuests.id))
+		.innerJoin(searchTargets, eq(scrapingTasks.targetId, searchTargets.id))
 		.$dynamic();
 
-	if (questIdFilter) {
-		query = query.where(eq(scrapingTasks.questId, questIdFilter));
+	if (targetIdFilter) {
+		query = query.where(eq(scrapingTasks.targetId, targetIdFilter));
 	}
 
 	query = query.orderBy(desc(scrapingTasks.startedAt));
@@ -58,7 +58,7 @@ router.get("/:id", (req, res) => {
 	const task = db
 		.select({
 			id: scrapingTasks.id,
-			questId: scrapingTasks.questId,
+			targetId: scrapingTasks.targetId,
 			startedAt: scrapingTasks.startedAt,
 			status: scrapingTasks.status,
 			maxPages: scrapingTasks.maxPages,
@@ -68,11 +68,11 @@ router.get("/:id", (req, res) => {
 			detailsFailed: scrapingTasks.detailsFailed,
 			errorMessage: scrapingTasks.errorMessage,
 			errorLogs: scrapingTasks.errorLogs,
-			questName: searchQuests.name,
-			questLocation: searchQuests.location,
+			targetName: searchTargets.name,
+			targetLocation: searchTargets.location,
 		})
 		.from(scrapingTasks)
-		.innerJoin(searchQuests, eq(scrapingTasks.questId, searchQuests.id))
+		.innerJoin(searchTargets, eq(scrapingTasks.targetId, searchTargets.id))
 		.where(eq(scrapingTasks.id, id))
 		.get();
 

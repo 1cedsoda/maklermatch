@@ -112,16 +112,16 @@ export function ScrapingTaskDetailPage() {
 				<CardContent className="space-y-2 text-sm">
 					<div className="grid grid-cols-2 gap-x-8 gap-y-2">
 						<p>
-							<span className="text-muted-foreground">Quest:</span>{" "}
+							<span className="text-muted-foreground">Target:</span>{" "}
 							<Link
-								to={`/quests/${task.questId}`}
+								to={`/targets/${task.targetId}`}
 								className="text-primary hover:underline"
 							>
-								{task.questName}
+								{task.targetName}
 							</Link>
 							<span className="text-muted-foreground">
 								{" "}
-								({task.questLocation})
+								({task.targetLocation})
 							</span>
 						</p>
 						<p>

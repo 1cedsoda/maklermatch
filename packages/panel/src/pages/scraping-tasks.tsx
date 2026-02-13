@@ -27,7 +27,7 @@ export function ScrapingTasksPage() {
 				<TableHeader>
 					<TableRow>
 						<TableHead>ID</TableHead>
-						<TableHead>Scraping Quest</TableHead>
+						<TableHead>Scraping Target</TableHead>
 						<TableHead>Started At</TableHead>
 						<TableHead>Status</TableHead>
 						<TableHead>Pages</TableHead>
@@ -48,13 +48,13 @@ export function ScrapingTasksPage() {
 							</TableCell>
 							<TableCell>
 								<Link
-									to="/quests"
+									to="/targets"
 									className="text-primary underline-offset-4 hover:underline"
 								>
-									{t.questName}
+									{t.targetName}
 								</Link>
 								<span className="ml-1 text-muted-foreground text-xs">
-									({t.questLocation})
+									({t.targetLocation})
 								</span>
 							</TableCell>
 							<TableCell>{new Date(t.startedAt).toLocaleString()}</TableCell>

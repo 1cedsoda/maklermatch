@@ -14,7 +14,7 @@ export type RegisterPayload = z.infer<typeof registerPayloadSchema>;
 // ─── Scrape Lifecycle ─────────────────────────────────────────
 
 export const scrapeStartPayloadSchema = z.object({
-	questId: z.number(),
+	targetId: z.number(),
 	maxPages: z.number().int().positive().optional(),
 });
 
@@ -132,7 +132,7 @@ export type KleinanzeigenSearch = z.infer<typeof kleinanzeigenSearchSchema>;
 
 export const scraperTriggerPayloadSchema = z.object({
 	kleinanzeigenSearch: kleinanzeigenSearchSchema,
-	questId: z.number().optional(),
+	targetId: z.number().optional(),
 	maxPages: z.number().int().positive().optional(),
 	headless: z.boolean().optional(),
 });
