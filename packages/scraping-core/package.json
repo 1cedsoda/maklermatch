@@ -1,0 +1,14 @@
+{
+	"name": "@scraper/scraping-core",
+	"version": "1.0.0",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"dependencies": {
+		"@scraper/humanize": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	}
+}

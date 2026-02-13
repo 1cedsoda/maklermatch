@@ -1,16 +1,19 @@
 {
-	"name": "@scraper/scraping-server",
+	"name": "@scraper/scraping-kleinanzeigen",
 	"version": "1.0.0",
 	"type": "module",
+	"exports": {
+		".": "./src/index.ts"
+	},
 	"scripts": {
-		"dev": "bun run --watch src/index.ts",
-		"start": "bun run src/index.ts"
+		"scrape-berlin": "bun run scripts/scrape-berlin.ts",
+		"test": "bun test"
 	},
 	"dependencies": {
-		"@scraper/api-types": "workspace:*",
 		"@scraper/humanize": "workspace:*",
-		"@scraper/scraping-kleinanzeigen": "workspace:*",
 		"@scraper/scraping-core": "workspace:*",
+		"happy-dom": "^20.6.1",
+		"patchright": "^1.49.1",
 		"pino": "^10.3.1",
 		"pino-pretty": "^13.1.3"
 	},

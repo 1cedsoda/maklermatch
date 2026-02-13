@@ -3,7 +3,15 @@
 }
 
 eliteballknowledge.phlpp.sh:8443 {
-	reverse_proxy scraping-server:3000
+	handle /api/* {
+		reverse_proxy api-server:3001
+	}
+
+	handle {
+		root * /srv/panel
+		try_files {path} /index.html
+		file_server
+	}
 
 	log {
 		output stdout

@@ -7,9 +7,11 @@ WORKDIR /app
 
 # Copy workspace root manifests for dependency resolution
 COPY package.json bun.lock ./
+COPY packages/api/package.json ./packages/api/
 COPY packages/humanize/package.json ./packages/humanize/
-COPY packages/llm/package.json ./packages/llm/
-COPY packages/scraping/package.json ./packages/scraping/
+COPY packages/scraping-kleinanzeigen/package.json ./packages/scraping-kleinanzeigen/
+COPY packages/scraping-core/package.json ./packages/scraping-core/
+COPY packages/shared/package.json ./packages/shared/
 COPY packages/scraping-server/package.json ./packages/scraping-server/
 
 # Install all workspace dependencies
@@ -51,8 +53,11 @@ WORKDIR /app
 
 # Copy installed node_modules from install stage
 COPY --from=install /app/node_modules ./node_modules
+COPY --from=install /app/packages/api/node_modules ./packages/api/node_modules
 COPY --from=install /app/packages/humanize/node_modules ./packages/humanize/node_modules
-COPY --from=install /app/packages/scraping/node_modules ./packages/scraping/node_modules
+COPY --from=install /app/packages/scraping-kleinanzeigen/node_modules ./packages/scraping-kleinanzeigen/node_modules
+COPY --from=install /app/packages/scraping-core/node_modules ./packages/scraping-core/node_modules
+COPY --from=install /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY --from=install /app/packages/scraping-server/node_modules ./packages/scraping-server/node_modules
 
 # Copy Chromium browser from install stage
@@ -60,20 +65,19 @@ COPY --from=install /root/.cache/ms-playwright /root/.cache/ms-playwright
 
 # Copy all workspace source files
 COPY package.json bun.lock tsconfig.json ./
+COPY packages/api/ ./packages/api/
 COPY packages/humanize/ ./packages/humanize/
-COPY packages/scraping/ ./packages/scraping/
+COPY packages/scraping-kleinanzeigen/ ./packages/scraping-kleinanzeigen/
+COPY packages/scraping-core/ ./packages/scraping-core/
+COPY packages/shared/ ./packages/shared/
 COPY packages/scraping-server/ ./packages/scraping-server/
 
-# Create data directory for SQLite
+# Create data directory for HTML pages
 RUN mkdir -p /app/packages/scraping-server/data
 
 ENV NODE_ENV=production
-ENV PORT=3000
 
-# CWD must be scraping-server for drizzle migrations (migrationsFolder: "./drizzle")
 WORKDIR /app/packages/scraping-server
-
-EXPOSE 3000
 
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["bun", "run", "src/index.ts"]

@@ -1,4 +1,20 @@
 services:
+  api-server:
+    build:
+      context: ../..
+      dockerfile: packages/api-server/Dockerfile
+    container_name: api-server
+    restart: unless-stopped
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+      - TZ=Europe/Berlin
+      - SCRAPING_SERVER_URL=http://scraping-server:3002
+    volumes:
+      - scraper-data:/app/packages/api-server/data
+    networks:
+      - internal
+
   scraping-server:
     build:
       context: ../..
@@ -6,15 +22,27 @@ services:
     container_name: scraping-server
     restart: unless-stopped
     environment:
-      - PORT=3000
       - NODE_ENV=production
       - TZ=Europe/Berlin
+      - API_SERVER_URL=http://api-server:3001
     volumes:
-      - scraper-data:/app/packages/scraping-server/data
+      - scraper-html:/app/packages/scraping-server/data
       - ./proxies.txt:/app/packages/scraping/src/proxies.txt:ro
     shm_size: "2gb"
     networks:
       - internal
+    depends_on:
+      - api-server
+
+  panel-build:
+    build:
+      context: ../..
+      dockerfile: packages/panel/Dockerfile
+    container_name: panel-build
+    volumes:
+      - panel-dist:/app/packages/panel/dist
+    command: ["echo", "Panel built successfully"]
+    restart: "no"
 
   caddy:
     image: caddy:2-alpine
@@ -25,15 +53,19 @@ services:
       - "80:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - panel-dist:/srv/panel:ro
       - caddy-data:/data
       - caddy-config:/config
     networks:
       - internal
     depends_on:
-      - scraping-server
+      - api-server
+      - panel-build
 
 volumes:
   scraper-data:
+  scraper-html:
+  panel-dist:
   caddy-data:
   caddy-config:
 

@@ -32,3 +32,4 @@ export { randomUserAgent } from "./useragent";
 export { randomViewport } from "./viewport";
 export { generateIdentity } from "./identity";
 export type { BrowserIdentity, Proxy } from "./identity";
+export { loadProxies } from "./proxy";

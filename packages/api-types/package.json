@@ -1,0 +1,14 @@
+{
+	"name": "@scraper/api-types",
+	"version": "1.0.0",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"dependencies": {
+		"zod": "^3.22.4"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	}
+}
