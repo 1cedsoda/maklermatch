@@ -1,22 +1,48 @@
 import { Router } from "express";
 import { eq, desc } from "drizzle-orm";
 import { db } from "../db";
-import { brokers } from "../db/schema";
+import { brokers, companies } from "../db/schema";
 
 const router = Router();
 
 router.get("/", (_req, res) => {
-	const rows = db.select().from(brokers).orderBy(desc(brokers.id)).all();
+	const rows = db
+		.select({
+			id: brokers.id,
+			companyId: brokers.companyId,
+			companyName: companies.name,
+			name: brokers.name,
+			phone: brokers.phone,
+			email: brokers.email,
+			bio: brokers.bio,
+			active: brokers.active,
+			createdAt: brokers.createdAt,
+		})
+		.from(brokers)
+		.leftJoin(companies, eq(brokers.companyId, companies.id))
+		.orderBy(desc(brokers.id))
+		.all();
 
 	res.json(rows);
 });
 
 router.get("/:id", (req, res) => {
-	const broker = db
-		.select()
+	const [broker] = db
+		.select({
+			id: brokers.id,
+			companyId: brokers.companyId,
+			companyName: companies.name,
+			name: brokers.name,
+			phone: brokers.phone,
+			email: brokers.email,
+			bio: brokers.bio,
+			active: brokers.active,
+			createdAt: brokers.createdAt,
+		})
 		.from(brokers)
+		.leftJoin(companies, eq(brokers.companyId, companies.id))
 		.where(eq(brokers.id, Number(req.params.id)))
-		.get();
+		.all();
 
 	if (!broker) {
 		res.status(404).json({ error: "Broker not found" });
@@ -27,23 +53,10 @@ router.get("/:id", (req, res) => {
 });
 
 router.post("/", (req, res) => {
-	const {
-		name,
-		firma,
-		region,
-		spezialisierung,
-		erfahrungJahre,
-		provision,
-		arbeitsweise,
-		leistungen,
-		besonderheiten,
-		telefon,
-		email,
-		criteriaJson,
-	} = req.body;
+	const { name, phone, email, bio, companyId } = req.body;
 
-	if (!name || !firma || !region || !email) {
-		res.status(400).json({ error: "name, firma, region, email are required" });
+	if (!name || !email) {
+		res.status(400).json({ error: "name, email are required" });
 		return;
 	}
 
@@ -51,17 +64,10 @@ router.post("/", (req, res) => {
 		.insert(brokers)
 		.values({
 			name,
-			firma,
-			region,
-			spezialisierung: spezialisierung ?? null,
-			erfahrungJahre: erfahrungJahre ?? null,
-			provision: provision ?? null,
-			arbeitsweise: arbeitsweise ?? null,
-			leistungen: leistungen ?? null,
-			besonderheiten: besonderheiten ?? null,
-			telefon: telefon ?? null,
+			companyId: companyId ?? null,
+			phone: phone ?? null,
 			email,
-			criteriaJson: criteriaJson ?? null,
+			bio: bio ?? null,
 		})
 		.returning()
 		.get();
@@ -78,36 +84,15 @@ router.put("/:id", (req, res) => {
 		return;
 	}
 
-	const {
-		name,
-		firma,
-		region,
-		spezialisierung,
-		erfahrungJahre,
-		provision,
-		arbeitsweise,
-		leistungen,
-		besonderheiten,
-		telefon,
-		email,
-		criteriaJson,
-		active,
-	} = req.body;
+	const { name, phone, email, bio, companyId, active } = req.body;
 
 	db.update(brokers)
 		.set({
 			...(name !== undefined && { name }),
-			...(firma !== undefined && { firma }),
-			...(region !== undefined && { region }),
-			...(spezialisierung !== undefined && { spezialisierung }),
-			...(erfahrungJahre !== undefined && { erfahrungJahre }),
-			...(provision !== undefined && { provision }),
-			...(arbeitsweise !== undefined && { arbeitsweise }),
-			...(leistungen !== undefined && { leistungen }),
-			...(besonderheiten !== undefined && { besonderheiten }),
-			...(telefon !== undefined && { telefon }),
+			...(companyId !== undefined && { companyId }),
+			...(phone !== undefined && { phone }),
 			...(email !== undefined && { email }),
-			...(criteriaJson !== undefined && { criteriaJson }),
+			...(bio !== undefined && { bio }),
 			...(active !== undefined && { active }),
 		})
 		.where(eq(brokers.id, id))

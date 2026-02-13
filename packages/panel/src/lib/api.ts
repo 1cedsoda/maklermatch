@@ -14,46 +14,118 @@ import type {
 	SellerWithSnapshots,
 } from "@scraper/api-types";
 
-export interface BrokerCriteria {
-	plzPrefixes?: string[];
-	cities?: string[];
-	bundeslaender?: string[];
-	propertyTypes?: string[];
-	minPrice?: number;
-	maxPrice?: number;
-}
-
 export interface BrokerRow {
 	id: number;
+	companyId: number | null;
+	companyName: string | null;
 	name: string;
-	firma: string;
-	region: string;
-	spezialisierung: string | null;
-	erfahrungJahre: number | null;
-	provision: string | null;
-	arbeitsweise: string | null;
-	leistungen: string[] | null;
-	besonderheiten: string[] | null;
-	telefon: string | null;
+	phone: string | null;
 	email: string;
-	criteriaJson: BrokerCriteria | null;
+	bio: string | null;
 	active: boolean;
 	createdAt: string;
 }
 
 export interface BrokerInput {
 	name: string;
-	firma: string;
-	region: string;
-	spezialisierung?: string;
-	erfahrungJahre?: number;
-	provision?: string;
-	arbeitsweise?: string;
-	leistungen?: string[];
-	besonderheiten?: string[];
-	telefon?: string;
+	companyId?: number | null;
+	phone?: string;
 	email: string;
-	criteriaJson?: BrokerCriteria;
+	bio?: string;
+}
+
+export interface CompanyRow {
+	id: number;
+	name: string;
+	email: string | null;
+	description: string | null;
+	billingStreet: string | null;
+	billingStreet2: string | null;
+	billingCity: string | null;
+	billingZipCode: string | null;
+	billingCountry: string | null;
+	ustId: string | null;
+	iban: string | null;
+	bic: string | null;
+	bankName: string | null;
+	minPrice: number | null;
+	maxPrice: number | null;
+	active: boolean;
+	createdAt: string;
+	brokerCount?: number;
+}
+
+export interface CompanyInput {
+	name: string;
+	email?: string;
+	description?: string;
+	billingStreet?: string;
+	billingStreet2?: string;
+	billingCity?: string;
+	billingZipCode?: string;
+	billingCountry?: string;
+	ustId?: string;
+	iban?: string;
+	bic?: string;
+	bankName?: string;
+	minPrice?: number | null;
+	maxPrice?: number | null;
+}
+
+// --- Zip Code Groups ---
+
+export interface ZipCodeGroupBroker {
+	id: number;
+	brokerId: number;
+	brokerName: string | null;
+}
+
+export interface ZipCodeGroupRow {
+	id: number;
+	companyId: number;
+	zipCodes: string[];
+	brokers: ZipCodeGroupBroker[];
+	active: boolean;
+	createdAt: string;
+}
+
+// --- Conversations ---
+
+export interface ConversationRow {
+	id: number;
+	listingId: string;
+	listingTitle: string | null;
+	brokerId: string;
+	brokerEmail: string;
+	sellerName: string | null;
+	status: "active" | "reply_received" | "stopped" | "done";
+	currentStage: string;
+	lastMessageAt: string | null;
+	createdAt: string;
+}
+
+export interface ConversationMessageRow {
+	id: number;
+	conversationId: number;
+	direction: "outbound" | "inbound";
+	channel: "browser" | "email";
+	body: string;
+	stage: string | null;
+	spamGuardScore: number | null;
+	sentAt: string;
+}
+
+export interface ConversationDetail extends ConversationRow {
+	messages: ConversationMessageRow[];
+	emails: unknown[];
+	broker: BrokerRow | null;
+	listing: {
+		title: string;
+		description: string;
+		price: string | null;
+		location: string | null;
+		url: string;
+	} | null;
 }
 
 export interface ScraperStatusResponse {
@@ -195,6 +267,8 @@ class PanelApiClient {
 		return this.request("GET", `/api/sellers/${id}`);
 	}
 
+	// --- Brokers ---
+
 	getBrokers(): Promise<BrokerRow[]> {
 		return this.request("GET", "/api/brokers");
 	}
@@ -213,6 +287,87 @@ class PanelApiClient {
 
 	async deleteBroker(id: number): Promise<void> {
 		await this.request("DELETE", `/api/brokers/${id}`);
+	}
+
+	// --- Companies ---
+
+	getCompanies(): Promise<CompanyRow[]> {
+		return this.request("GET", "/api/companies");
+	}
+
+	getCompany(id: number): Promise<CompanyRow & { brokers: BrokerRow[] }> {
+		return this.request("GET", `/api/companies/${id}`);
+	}
+
+	createCompany(data: CompanyInput): Promise<CompanyRow> {
+		return this.request("POST", "/api/companies", data);
+	}
+
+	updateCompany(id: number, data: Partial<CompanyInput>): Promise<CompanyRow> {
+		return this.request("PUT", `/api/companies/${id}`, data);
+	}
+
+	async deleteCompany(id: number): Promise<void> {
+		await this.request("DELETE", `/api/companies/${id}`);
+	}
+
+	// --- Zip Code Groups ---
+
+	getZipCodeGroups(companyId: number): Promise<ZipCodeGroupRow[]> {
+		return this.request("GET", `/api/companies/${companyId}/plz`);
+	}
+
+	createZipCodeGroup(
+		companyId: number,
+		data: { zipCodes: string[]; brokerIds?: number[] },
+	): Promise<ZipCodeGroupRow> {
+		return this.request("POST", `/api/companies/${companyId}/plz`, data);
+	}
+
+	updateZipCodeGroup(
+		companyId: number,
+		id: number,
+		data: { zipCodes?: string[]; brokerIds?: number[] },
+	): Promise<ZipCodeGroupRow> {
+		return this.request("PUT", `/api/companies/${companyId}/plz/${id}`, data);
+	}
+
+	async deleteZipCodeGroup(companyId: number, id: number): Promise<void> {
+		await this.request("DELETE", `/api/companies/${companyId}/plz/${id}`);
+	}
+
+	// --- Conversations ---
+
+	createConversation(data: {
+		listingId: string;
+		brokerId: number;
+		brokerEmail: string;
+		sellerName?: string;
+	}): Promise<ConversationRow> {
+		return this.request("POST", "/api/conversations", data);
+	}
+
+	getConversations(): Promise<ConversationRow[]> {
+		return this.request("GET", "/api/conversations");
+	}
+
+	getConversation(id: number): Promise<ConversationDetail> {
+		return this.request("GET", `/api/conversations/${id}`);
+	}
+
+	saveConversationMessage(
+		conversationId: number,
+		data: { direction: "outbound" | "inbound"; body: string; channel?: string },
+	): Promise<ConversationMessageRow> {
+		return this.request(
+			"POST",
+			`/api/conversations/${conversationId}/messages`,
+			data,
+		);
+	}
+
+	stopConversation(id: number): Promise<{ ok: boolean }> {
+		return this.request("POST", `/api/conversations/${id}/stop`);
 	}
 }
 

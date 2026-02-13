@@ -8,21 +8,18 @@ import {
 
 export interface BrokerInfo {
 	name: string;
-	firma: string;
-	region: string;
-	spezialisierung: string;
-	erfahrungJahre: number;
-	provision: string;
-	arbeitsweise: string;
-	leistungen: string[];
-	besonderheiten: string[];
-	telefon: string;
+	company: string;
+	phone: string;
 	email: string;
+	bio: string;
 }
 
-function buildBasePrompt(persona: { vorname: string; firma: string }): string {
+function buildBasePrompt(persona: {
+	vorname: string;
+	company: string;
+}): string {
 	const raw = [IDENTITY, STYLE_RULES, CHAT_CHARACTER].join("\n\n");
-	return injectPersona(raw, persona.vorname, persona.firma);
+	return injectPersona(raw, persona.vorname, persona.company);
 }
 
 export function buildSystemPrompt(
@@ -31,7 +28,7 @@ export function buildSystemPrompt(
 ): string {
 	const persona = {
 		vorname: extractVorname(broker?.name ?? "Max"),
-		firma: broker?.firma ?? "Maklermatch",
+		company: broker?.company ?? "Maklermatch",
 	};
 
 	let prompt = buildBasePrompt(persona);
@@ -47,19 +44,9 @@ was du nicht halten kannst.`;
 
 	if (!broker) return prompt;
 
-	const brokerSection = `
-
-DEIN PROFIL:
-Du bist ${broker.name}, ${broker.firma}, ${broker.region}.
-${broker.spezialisierung}. ${broker.erfahrungJahre} Jahre dabei.
-Provision: ${broker.provision}
-So arbeitest du: ${broker.arbeitsweise}
-Du kannst: ${broker.leistungen.join(", ")}
-Besonders: ${broker.besonderheiten.join(", ")}
-Tel: ${broker.telefon} | Mail: ${broker.email}
-
-Erwähn deine Leistungen oder Besonderheiten vor allem wenn danach gefragt wird oder es \
-zum Gespräch passt. Kein ungebetener Pitch.`;
+	const brokerSection = broker.bio
+		? `\n\nDEIN PROFIL:\nDu bist ${broker.name}, ${broker.company}.\nTel: ${broker.phone} | Mail: ${broker.email}\n\n${broker.bio}`
+		: `\n\nDEIN PROFIL:\nDu bist ${broker.name}, ${broker.company}.\nTel: ${broker.phone} | Mail: ${broker.email}`;
 
 	return prompt + brokerSection;
 }

@@ -58,16 +58,10 @@ export function ChatPage() {
 						brokerProfile: b
 							? {
 									name: b.name,
-									firma: b.firma,
-									region: b.region,
-									spezialisierung: b.spezialisierung ?? "",
-									erfahrungJahre: b.erfahrungJahre ?? 0,
-									provision: b.provision ?? "",
-									arbeitsweise: b.arbeitsweise ?? "",
-									leistungen: b.leistungen ?? [],
-									besonderheiten: b.besonderheiten ?? [],
-									telefon: b.telefon ?? "",
+									company: b.companyName ?? "",
+									phone: b.phone ?? "",
 									email: b.email,
+									bio: b.bio ?? "",
 								}
 							: undefined,
 						listingText: listingRef.current.rawText,
@@ -114,8 +108,7 @@ export function ChatPage() {
 					sellerName: selectedListing.sellerName,
 					persona: {
 						name: selectedBroker.name,
-						firma: selectedBroker.firma,
-						region: selectedBroker.region,
+						firma: selectedBroker.companyName ?? "",
 					},
 				}),
 			});
@@ -151,7 +144,7 @@ export function ChatPage() {
 		<div className="flex h-full gap-6">
 			{/* Sidebar */}
 			<div className="flex w-80 shrink-0 flex-col gap-4">
-				{/* Makler Section */}
+				{/* User Section */}
 				<Card className="gap-0 overflow-hidden py-0">
 					<button
 						type="button"
@@ -160,7 +153,7 @@ export function ChatPage() {
 					>
 						<div className="flex items-center gap-2">
 							<User className="size-4 text-muted-foreground" />
-							<span className="text-sm font-semibold">Makler</span>
+							<span className="text-sm font-semibold">User</span>
 						</div>
 						{brokerExpanded ? (
 							<ChevronUp className="size-4 text-muted-foreground" />
@@ -173,7 +166,7 @@ export function ChatPage() {
 						<div className="border-t px-3 py-3">
 							{brokers.length === 0 ? (
 								<p className="text-xs text-muted-foreground px-3 py-2">
-									Keine Makler angelegt. Erstelle einen unter /brokers.
+									Keine Users angelegt. Erstelle einen unter /brokers.
 								</p>
 							) : (
 								<div className="flex flex-col gap-1.5">
@@ -205,30 +198,20 @@ export function ChatPage() {
 											>
 												{broker.name}
 											</p>
-											<p
-												className={cn(
-													"mt-0.5 text-xs",
-													selectedBroker?.id === broker.id
-														? "text-primary-foreground/70"
-														: "text-muted-foreground",
-												)}
-											>
-												{broker.firma}
-											</p>
+											{broker.companyName && (
+												<p
+													className={cn(
+														"mt-0.5 text-xs",
+														selectedBroker?.id === broker.id
+															? "text-primary-foreground/70"
+															: "text-muted-foreground",
+													)}
+												>
+													{broker.companyName}
+												</p>
+											)}
 										</button>
 									))}
-								</div>
-							)}
-
-							{selectedBroker && (
-								<div className="mt-3 rounded-lg bg-muted px-3 py-2.5">
-									<p className="text-xs font-medium text-foreground">
-										{selectedBroker.spezialisierung}
-									</p>
-									<p className="mt-1 text-xs text-muted-foreground">
-										{selectedBroker.erfahrungJahre} Jahre &middot;{" "}
-										{selectedBroker.region}
-									</p>
 								</div>
 							)}
 						</div>
@@ -326,10 +309,10 @@ export function ChatPage() {
 				{/* Header */}
 				<div className="flex items-center justify-between border-b px-5 py-3">
 					<div>
-						<h2 className="text-sm font-semibold">Chat</h2>
+						<h2 className="text-sm font-semibold">AI Sandbox</h2>
 						<p className="text-xs text-muted-foreground">
 							Verkäufer: {selectedListing.sellerName}
-							{selectedBroker && <> &middot; Makler: {selectedBroker.name}</>}
+							{selectedBroker && <> &middot; User: {selectedBroker.name}</>}
 						</p>
 					</div>
 					{generateMeta && (

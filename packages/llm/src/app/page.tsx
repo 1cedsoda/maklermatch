@@ -67,8 +67,7 @@ export default function Chat() {
 					sellerName: selectedListing.sellerName,
 					persona: {
 						name: selectedBroker.name,
-						firma: selectedBroker.firma,
-						region: selectedBroker.region,
+						company: selectedBroker.company,
 					},
 				}),
 			});
@@ -131,20 +130,9 @@ export default function Chat() {
 							<p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
 								{broker.name}
 							</p>
-							<p className="mt-0.5 text-xs text-zinc-500">
-								{broker.firma} &middot; {broker.region}
-							</p>
+							<p className="mt-0.5 text-xs text-zinc-500">{broker.company}</p>
 						</button>
 					))}
-					<div className="mt-1 rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-900">
-						<p className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-							{selectedBroker.spezialisierung}
-						</p>
-						<p className="mt-1 text-xs text-zinc-500">
-							{selectedBroker.erfahrungJahre} Jahre Erfahrung &middot;{" "}
-							{selectedBroker.provision}
-						</p>
-					</div>
 				</div>
 
 				{/* Inserate */}
