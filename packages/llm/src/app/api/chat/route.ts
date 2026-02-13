@@ -2,9 +2,9 @@ import { streamText, UIMessage, convertToModelMessages } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
 const langdock = createOpenAICompatible({
-  name: "langdock",
-  baseURL: "https://api.langdock.com/openai/eu/v1",
-  apiKey: process.env.LANGDOCK_API_KEY,
+	name: "langdock",
+	baseURL: "https://api.langdock.com/openai/eu/v1",
+	apiKey: process.env.LANGDOCK_API_KEY,
 });
 
 const SYSTEM_PROMPT = `Du bist Max von Maklermatch. Du schreibst private Immobilien-Verkäufer auf Kleinanzeigen an und versuchst sie davon zu überzeugen, einen professionellen Makler einzuschalten.
@@ -44,13 +44,13 @@ User: "Nicht wirklich, deswegen brauch ich ja Hilfe haha"
 Max: "haha ja logisch, dafür sind wir ja da. Wir haben ein paar echt gute Makler in München im Netzwerk die können dir ne Einschätzung geben. Wann würdest du denn gern verkaufen -- eher bald oder ist das noch länger hin?"`;
 
 export async function POST(req: Request) {
-  const { messages }: { messages: UIMessage[] } = await req.json();
+	const { messages }: { messages: UIMessage[] } = await req.json();
 
-  const result = streamText({
-    model: langdock("gpt-4o"),
-    system: SYSTEM_PROMPT,
-    messages: await convertToModelMessages(messages),
-  });
+	const result = streamText({
+		model: langdock("gpt-4o"),
+		system: SYSTEM_PROMPT,
+		messages: await convertToModelMessages(messages),
+	});
 
-  return result.toUIMessageStreamResponse();
+	return result.toUIMessageStreamResponse();
 }

@@ -6,5 +6,10 @@
 	},
 	"linter": {
 		"enabled": false
+	},
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
+		}
 	}
 }
