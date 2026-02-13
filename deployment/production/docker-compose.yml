@@ -13,14 +13,14 @@ services:
       - TZ=Europe/Berlin
       # Email - inbound SMTP receiver
       - SMTP_RECEIVER_PORT=2525
-      - SMTP_RECEIVER_DOMAIN=${SMTP_DOMAIN}
-      # Email - outbound SMTP relay
+      - SMTP_DOMAIN=${SMTP_DOMAIN}
+      # Email - outbound SMTP relay (Resend)
+      - SMTP_MODE=${SMTP_MODE:-relay}
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_PORT=${SMTP_PORT:-465}
       - SMTP_SECURE=${SMTP_SECURE:-true}
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASS=${SMTP_PASS}
-      - SMTP_FROM=${SMTP_FROM}
     volumes:
       - scraper-data:/app/packages/api-server/data
     networks:
@@ -36,6 +36,9 @@ services:
       - NODE_ENV=production
       - TZ=Europe/Berlin
       - API_SERVER_URL=http://api-server:3001
+      # Kleinanzeigen account for messaging
+      - KLEINANZEIGEN_EMAIL=${KLEINANZEIGEN_EMAIL}
+      - KLEINANZEIGEN_PASSWORD=${KLEINANZEIGEN_PASSWORD}
     volumes:
       - scraper-html:/app/packages/scraping-server/data
       - ./proxies.txt:/app/packages/scraping/src/proxies.txt:ro

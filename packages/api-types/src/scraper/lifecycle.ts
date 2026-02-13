@@ -138,3 +138,22 @@ export const scraperTriggerPayloadSchema = z.object({
 });
 
 export type ScraperTriggerPayload = z.infer<typeof scraperTriggerPayloadSchema>;
+
+// ─── Message Sending (Server → Scraper) ─────────────────────
+
+export const messageSendPayloadSchema = z.object({
+	jobId: z.number(),
+	conversationId: z.number(),
+	kleinanzeigenConversationId: z.string(),
+	message: z.string(),
+});
+
+export type MessageSendPayload = z.infer<typeof messageSendPayloadSchema>;
+
+export const messageSendResultSchema = z.object({
+	ok: z.boolean(),
+	jobId: z.number(),
+	error: z.string().optional(),
+});
+
+export type MessageSendResult = z.infer<typeof messageSendResultSchema>;

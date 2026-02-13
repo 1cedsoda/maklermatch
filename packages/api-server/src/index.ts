@@ -14,6 +14,7 @@ import sellersRoutes from "./routes/sellers";
 import { setupScraperSocket } from "./socket/scraper";
 import { startScheduler } from "./services/scheduler";
 import conversationsRoutes from "./routes/conversations";
+import brokersRoutes from "./routes/brokers";
 import { startSmtpReceiver } from "./email/smtp-receiver";
 import { startSendScheduler } from "./email/scheduler";
 
@@ -38,6 +39,7 @@ app.use("/api/scraper", jwtAuth, scraperProxyRoutes);
 app.use("/api/quests", jwtAuth, questsRoutes);
 app.use("/api/sellers", jwtAuth, sellersRoutes);
 app.use("/api/conversations", jwtAuth, conversationsRoutes);
+app.use("/api/brokers", jwtAuth, brokersRoutes);
 
 // Run migrations on startup
 migrate(db, { migrationsFolder: "./drizzle" });

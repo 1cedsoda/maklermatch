@@ -145,6 +145,35 @@ export const listingDetailSnapshots = sqliteTable("listing_detail_snapshots", {
 	html: text("html"),
 });
 
+// --- Brokers ---
+
+export const brokers = sqliteTable("brokers", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	name: text("name").notNull(),
+	firma: text("firma").notNull(),
+	region: text("region").notNull(),
+	spezialisierung: text("spezialisierung"),
+	erfahrungJahre: integer("erfahrung_jahre"),
+	provision: text("provision"),
+	arbeitsweise: text("arbeitsweise"),
+	leistungen: text("leistungen", { mode: "json" }).$type<string[]>(),
+	besonderheiten: text("besonderheiten", { mode: "json" }).$type<string[]>(),
+	telefon: text("telefon"),
+	email: text("email").notNull(),
+	criteriaJson: text("criteria_json", { mode: "json" }).$type<{
+		plzPrefixes?: string[];
+		cities?: string[];
+		bundeslaender?: string[];
+		propertyTypes?: string[];
+		minPrice?: number;
+		maxPrice?: number;
+	}>(),
+	active: integer("active", { mode: "boolean" }).notNull().default(true),
+	createdAt: text("created_at")
+		.notNull()
+		.$defaultFn(() => new Date().toISOString()),
+});
+
 // --- Email / Conversations ---
 
 export const conversations = sqliteTable("conversations", {
@@ -153,7 +182,9 @@ export const conversations = sqliteTable("conversations", {
 		.notNull()
 		.references(() => listings.id),
 	brokerId: text("broker_id").notNull(),
+	brokerEmail: text("broker_email").notNull(),
 	sellerName: text("seller_name"),
+	kleinanzeigenConversationId: text("kleinanzeigen_conversation_id"),
 	kleinanzeigenReplyTo: text("kleinanzeigen_reply_to"),
 	emailSubject: text("email_subject"),
 	status: text("status", {

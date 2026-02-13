@@ -6,6 +6,7 @@ import {
 } from "@scraper/api-types";
 import type { ApiClient } from "./api-client";
 import { executeScrapePass } from "./scrape";
+import { sendMessage } from "./message-sender";
 import { logger } from "./logger";
 
 const log = logger.child({ module: "socket-handlers" });
@@ -62,5 +63,14 @@ export function setupScraperHandlers(
 		} finally {
 			setIdle();
 		}
+	});
+
+	socket.on(SocketEvents.MESSAGE_SEND, async (data, ack) => {
+		log.info(
+			{ jobId: data.jobId, conversationId: data.conversationId },
+			"Message send requested",
+		);
+		const result = await sendMessage(data);
+		ack(result);
 	});
 }

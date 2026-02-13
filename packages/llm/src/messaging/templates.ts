@@ -5,6 +5,7 @@ import {
 	TASK_FOLLOWUP_1,
 	TASK_FOLLOWUP_2,
 	injectPersona,
+	extractVorname,
 } from "@scraper/agent";
 import type { ListingSignals, PersonalizationResult } from "./models";
 
@@ -38,7 +39,7 @@ function buildSystemPrompt(
 	toneInstruction: string,
 	persona: MessagePersona,
 ): string {
-	const vorname = persona.name.split(" ")[0];
+	const vorname = extractVorname(persona.name);
 	const parts = [IDENTITY, STYLE_RULES, toneInstruction, task].join("\n\n");
 	return injectPersona(parts, vorname, persona.firma);
 }
@@ -124,7 +125,7 @@ export function buildGenerationPrompt(
 	personalization: PersonalizationResult,
 	persona: MessagePersona = DEFAULT_PERSONA,
 ): [string, string] {
-	const vorname = persona.name.split(" ")[0];
+	const vorname = extractVorname(persona.name);
 	const toneInstruction =
 		signals.tone === "du" ? buildToneDu(vorname) : buildToneSie(vorname);
 
@@ -149,7 +150,7 @@ export function buildFollowupPrompt(
 	stage: number,
 	persona: MessagePersona = DEFAULT_PERSONA,
 ): [string, string] {
-	const vorname = persona.name.split(" ")[0];
+	const vorname = extractVorname(persona.name);
 	const toneInstruction =
 		signals.tone === "du" ? buildToneDu(vorname) : buildToneSie(vorname);
 

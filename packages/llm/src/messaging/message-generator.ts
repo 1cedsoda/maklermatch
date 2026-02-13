@@ -171,14 +171,6 @@ export class MessageGenerator {
 			sellerName,
 		);
 
-		const gateResult = await this.gate.check(signals, this.brokerCriteria);
-		if (!gateResult.passed) {
-			console.info(
-				`Follow-up for ${listingId} rejected by gate: [${gateResult.rejectionType}] ${gateResult.rejectionReason}`,
-			);
-			return { message: null, skipped: true, delayMs: 0, gateResult };
-		}
-
 		const stageNum = stage === FollowUpStage.FOLLOWUP_1 ? 1 : 2;
 
 		let [systemPrompt, userPrompt] = buildFollowupPrompt(

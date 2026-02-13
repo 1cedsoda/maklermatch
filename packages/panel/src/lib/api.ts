@@ -14,6 +14,48 @@ import type {
 	SellerWithSnapshots,
 } from "@scraper/api-types";
 
+export interface BrokerCriteria {
+	plzPrefixes?: string[];
+	cities?: string[];
+	bundeslaender?: string[];
+	propertyTypes?: string[];
+	minPrice?: number;
+	maxPrice?: number;
+}
+
+export interface BrokerRow {
+	id: number;
+	name: string;
+	firma: string;
+	region: string;
+	spezialisierung: string | null;
+	erfahrungJahre: number | null;
+	provision: string | null;
+	arbeitsweise: string | null;
+	leistungen: string[] | null;
+	besonderheiten: string[] | null;
+	telefon: string | null;
+	email: string;
+	criteriaJson: BrokerCriteria | null;
+	active: boolean;
+	createdAt: string;
+}
+
+export interface BrokerInput {
+	name: string;
+	firma: string;
+	region: string;
+	spezialisierung?: string;
+	erfahrungJahre?: number;
+	provision?: string;
+	arbeitsweise?: string;
+	leistungen?: string[];
+	besonderheiten?: string[];
+	telefon?: string;
+	email: string;
+	criteriaJson?: BrokerCriteria;
+}
+
 export interface ScraperStatusResponse {
 	isRunning: boolean;
 	lastRunAt: string | null;
@@ -151,6 +193,26 @@ class PanelApiClient {
 
 	getSeller(id: number): Promise<SellerWithSnapshots> {
 		return this.request("GET", `/api/sellers/${id}`);
+	}
+
+	getBrokers(): Promise<BrokerRow[]> {
+		return this.request("GET", "/api/brokers");
+	}
+
+	getBroker(id: number): Promise<BrokerRow> {
+		return this.request("GET", `/api/brokers/${id}`);
+	}
+
+	createBroker(data: BrokerInput): Promise<BrokerRow> {
+		return this.request("POST", "/api/brokers", data);
+	}
+
+	updateBroker(id: number, data: Partial<BrokerInput>): Promise<BrokerRow> {
+		return this.request("PUT", `/api/brokers/${id}`, data);
+	}
+
+	async deleteBroker(id: number): Promise<void> {
+		await this.request("DELETE", `/api/brokers/${id}`);
 	}
 }
 

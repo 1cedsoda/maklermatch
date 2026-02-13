@@ -5,10 +5,12 @@
 		"packages/*"
 	],
 	"scripts": {
+		"dev": "concurrently -n panel,api,llm -c blue,green,magenta \"cd packages/panel && npm run dev\" \"cd packages/api-server && bun run dev\" \"cd packages/llm && bun run dev\"",
 		"prepare": "lefthook install"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.15",
+		"concurrently": "^9.2.1",
 		"lefthook": "^2.1.1"
 	},
 	"dependencies": {

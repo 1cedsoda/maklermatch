@@ -3,6 +3,7 @@ import {
 	STYLE_RULES,
 	CHAT_CHARACTER,
 	injectPersona,
+	extractVorname,
 } from "./prompts";
 
 export interface BrokerInfo {
@@ -29,7 +30,7 @@ export function buildSystemPrompt(
 	listingText?: string,
 ): string {
 	const persona = {
-		vorname: broker?.name.split(" ")[0] ?? "Max",
+		vorname: extractVorname(broker?.name ?? "Max"),
 		firma: broker?.firma ?? "Maklermatch",
 	};
 

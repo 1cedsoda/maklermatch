@@ -9,7 +9,6 @@ import {
 	type ConversationState,
 	type Message,
 	FollowUpStage,
-	ReplySentiment,
 	shouldStop,
 } from "./models";
 
@@ -115,25 +114,13 @@ export class FollowUpEngine {
 		this.scheduleNextFollowup(listingId, now);
 	}
 
-	recordReply(
-		listingId: string,
-		sentiment: ReplySentiment,
-		now = new Date(),
-	): void {
+	recordReply(listingId: string, now = new Date()): void {
 		const state = this.conversations.get(listingId);
 		if (!state) return;
 
 		state.replyReceived = true;
 		state.replyAt = now;
-		state.replySentiment = sentiment;
 		state.nextFollowupAt = null;
-
-		if (
-			sentiment === ReplySentiment.NEGATIVE_POLITE ||
-			sentiment === ReplySentiment.NEGATIVE_AGGRESSIVE
-		) {
-			state.conversationActive = false;
-		}
 	}
 
 	recordListingRemoved(listingId: string): void {
@@ -164,22 +151,15 @@ export class FollowUpEngine {
 		repliesReceived: number;
 		replyRate: number;
 		activeConversations: number;
-		negativeReplies: number;
 		sellersContacted: number;
 	} {
 		const total = this.conversations.size;
 		let replied = 0;
 		let active = 0;
-		let negative = 0;
 
 		for (const s of this.conversations.values()) {
 			if (s.replyReceived) replied++;
 			if (s.conversationActive) active++;
-			if (
-				s.replySentiment === ReplySentiment.NEGATIVE_POLITE ||
-				s.replySentiment === ReplySentiment.NEGATIVE_AGGRESSIVE
-			)
-				negative++;
 		}
 
 		return {
@@ -187,7 +167,6 @@ export class FollowUpEngine {
 			repliesReceived: replied,
 			replyRate: total > 0 ? replied / total : 0,
 			activeConversations: active,
-			negativeReplies: negative,
 			sellersContacted: this.contactedSellers.size,
 		};
 	}

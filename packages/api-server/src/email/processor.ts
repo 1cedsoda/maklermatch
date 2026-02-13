@@ -64,7 +64,9 @@ export async function processIncomingEmail(
 		await handleSellerReply(
 			conversation,
 			parsed.messageText,
+			parsed.senderName,
 			parsed.kleinanzeigenAddress,
+			parsed.conversationId,
 			stored.id,
 		);
 	} else {
@@ -73,6 +75,7 @@ export async function processIncomingEmail(
 		await handleOutboundConfirmation(
 			parsed.kleinanzeigenAddress,
 			parsed.subject,
+			parsed.conversationId,
 			stored.id,
 		);
 	}
@@ -90,11 +93,18 @@ export async function processIncomingEmail(
 async function handleSellerReply(
 	conversation: typeof conversations.$inferSelect,
 	messageText: string,
+	senderName: string | null,
 	kleinanzeigenAddress: string,
+	kleinanzeigenConversationId: string | null,
 	emailId: number,
 ): Promise<void> {
 	log.info(
-		{ conversationId: conversation.id, text: messageText.slice(0, 80) },
+		{
+			conversationId: conversation.id,
+			sender: senderName,
+			kleinanzeigenConversationId,
+			text: messageText.slice(0, 80),
+		},
 		"Seller reply received",
 	);
 
@@ -109,12 +119,23 @@ async function handleSellerReply(
 		})
 		.run();
 
-	// Update conversation status
+	// Update conversation status, seller name, and Kleinanzeigen conversation ID
+	const updates: Record<string, unknown> = {
+		status: "reply_received",
+		lastMessageAt: new Date().toISOString(),
+	};
+	if (senderName && !conversation.sellerName) {
+		updates.sellerName = senderName;
+	}
+	if (
+		kleinanzeigenConversationId &&
+		!conversation.kleinanzeigenConversationId
+	) {
+		updates.kleinanzeigenConversationId = kleinanzeigenConversationId;
+	}
+
 	db.update(conversations)
-		.set({
-			status: "reply_received",
-			lastMessageAt: new Date().toISOString(),
-		})
+		.set(updates)
 		.where(eq(conversations.id, conversation.id))
 		.run();
 
@@ -132,6 +153,7 @@ async function handleSellerReply(
 async function handleOutboundConfirmation(
 	kleinanzeigenAddress: string,
 	subject: string,
+	kleinanzeigenConversationId: string | null,
 	emailId: number,
 ): Promise<void> {
 	// Find the most recent conversation without a reply-to address
@@ -153,11 +175,16 @@ async function handleOutboundConfirmation(
 	// Link to the most recent unlinked conversation
 	const target = unlinked[unlinked.length - 1];
 
+	const updates: Record<string, unknown> = {
+		kleinanzeigenReplyTo: kleinanzeigenAddress,
+		emailSubject: subject,
+	};
+	if (kleinanzeigenConversationId) {
+		updates.kleinanzeigenConversationId = kleinanzeigenConversationId;
+	}
+
 	db.update(conversations)
-		.set({
-			kleinanzeigenReplyTo: kleinanzeigenAddress,
-			emailSubject: subject,
-		})
+		.set(updates)
 		.where(eq(conversations.id, target.id))
 		.run();
 
@@ -170,6 +197,7 @@ async function handleOutboundConfirmation(
 		{
 			conversationId: target.id,
 			address: kleinanzeigenAddress,
+			kleinanzeigenConversationId,
 		},
 		"Linked anonymized address to conversation",
 	);

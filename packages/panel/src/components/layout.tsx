@@ -9,12 +9,14 @@ import {
 	Bot,
 	LogOut,
 	MessageSquare,
+	Briefcase,
 	type LucideIcon,
 } from "lucide-react";
 
 const NAV_ITEMS: { to: string; label: string; icon: LucideIcon }[] = [
 	{ to: "/", label: "Dashboard", icon: LayoutDashboard },
 	{ to: "/chat", label: "Chat", icon: MessageSquare },
+	{ to: "/brokers", label: "Makler", icon: Briefcase },
 	{ to: "/listings", label: "Listings", icon: List },
 	{ to: "/sellers", label: "Sellers", icon: Users },
 	{ to: "/quests", label: "Scraping Quests", icon: Search },

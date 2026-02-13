@@ -14,6 +14,7 @@ import { QuestDetailPage } from "@/pages/quest-detail";
 import { SellersPage } from "@/pages/sellers";
 import { SellerDetailPage } from "@/pages/seller-detail";
 import { ChatPage } from "@/pages/chat";
+import { BrokersPage } from "@/pages/brokers";
 
 export function App() {
 	return (
@@ -42,6 +43,7 @@ export function App() {
 							element={<ScrapingTaskDetailPage />}
 						/>
 						<Route path="scraper" element={<ScraperPage />} />
+						<Route path="brokers" element={<BrokersPage />} />
 					</Route>
 					<Route path="*" element={<Navigate to="/" replace />} />
 				</Routes>

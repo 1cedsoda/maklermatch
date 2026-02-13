@@ -1,7 +1,8 @@
 import { eq, and, lte } from "drizzle-orm";
 import { db } from "../db";
 import { scheduledSends, conversations } from "../db/schema";
-import { sendReply } from "./smtp-sender";
+import { getScraperSocket } from "../socket/scraper";
+import { SocketEvents } from "@scraper/api-types";
 import { logger } from "../logger";
 
 const log = logger.child({ module: "send-scheduler" });
@@ -119,10 +120,10 @@ async function executeSend(
 		return;
 	}
 
-	if (!conversation.kleinanzeigenReplyTo) {
+	if (!conversation.kleinanzeigenConversationId) {
 		log.warn(
 			{ conversationId: conversation.id },
-			"No Kleinanzeigen reply-to address, cannot send via email",
+			"No Kleinanzeigen conversation ID, cannot send via browser",
 		);
 		db.update(scheduledSends)
 			.set({ status: "cancelled" })
@@ -131,14 +132,29 @@ async function executeSend(
 		return;
 	}
 
+	const socket = getScraperSocket();
+	if (!socket) {
+		log.warn({ jobId: job.id }, "No scraper connected, resetting to pending");
+		db.update(scheduledSends)
+			.set({ status: "pending" })
+			.where(eq(scheduledSends.id, job.id))
+			.run();
+		return;
+	}
+
 	try {
-		await sendReply({
-			to: conversation.kleinanzeigenReplyTo,
-			subject: conversation.emailSubject
-				? `Re: ${conversation.emailSubject}`
-				: "Re: Kleinanzeigen Nachricht",
-			body: job.message,
-		});
+		const result = await socket
+			.timeout(120_000)
+			.emitWithAck(SocketEvents.MESSAGE_SEND, {
+				jobId: job.id,
+				conversationId: conversation.id,
+				kleinanzeigenConversationId: conversation.kleinanzeigenConversationId,
+				message: job.message,
+			});
+
+		if (!result.ok) {
+			throw new Error(result.error || "Scraper returned failure");
+		}
 
 		db.update(scheduledSends)
 			.set({ status: "sent" })
@@ -154,12 +170,12 @@ async function executeSend(
 			{
 				jobId: job.id,
 				conversationId: job.conversationId,
-				to: conversation.kleinanzeigenReplyTo,
+				kleinanzeigenConversationId: conversation.kleinanzeigenConversationId,
 			},
-			"Scheduled send completed",
+			"Message sent via browser",
 		);
 	} catch (err) {
-		log.error({ err, jobId: job.id }, "Failed to send scheduled email");
+		log.error({ err, jobId: job.id }, "Failed to send message via browser");
 		// Reset to pending so it retries on next poll
 		db.update(scheduledSends)
 			.set({ status: "pending" })

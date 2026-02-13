@@ -3,7 +3,6 @@ export {
 	SellerEmotion,
 	DescriptionEffort,
 	PriceAssessment,
-	ReplySentiment,
 	FollowUpStage,
 	createListingSignals,
 	createMessage,
@@ -36,7 +35,6 @@ export type { SafeguardResult } from "./safeguard";
 export { DelayCalculator } from "./delay-calculator";
 export type { DelayResult } from "./delay-calculator";
 export { FollowUpEngine } from "./followup-engine";
-export { OutcomeTracker } from "./outcome-tracker";
 export { TimeWindow, TimePeriod } from "./time-window";
 export type { TimeAdjustment } from "./time-window";
 export { InMemoryJobStore, JobStatus } from "./job-store";

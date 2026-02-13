@@ -19,7 +19,7 @@ export {
 	TASK_FOLLOWUP_2,
 	SAFEGUARD,
 	LISTING_GATE,
-	SENTIMENT,
 	QUALITY_CHECK,
 	injectPersona,
+	extractVorname,
 } from "./prompts";

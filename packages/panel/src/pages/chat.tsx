@@ -1,8 +1,8 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useRef, useEffect, useState, useMemo } from "react";
+import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { TEST_LISTINGS, type Listing } from "@/data/listings";
-import { TEST_BROKERS, type BrokerProfile } from "@/data/brokers";
+import { api, type BrokerRow } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,10 +23,26 @@ export function ChatPage() {
 	const [selectedListing, setSelectedListing] = useState<Listing>(
 		TEST_LISTINGS[0],
 	);
-	const [selectedBroker, setSelectedBroker] = useState<BrokerProfile>(
-		TEST_BROKERS[0],
-	);
+	const [brokers, setBrokers] = useState<BrokerRow[]>([]);
+	const [selectedBroker, setSelectedBroker] = useState<BrokerRow | null>(null);
 	const [brokerExpanded, setBrokerExpanded] = useState(true);
+
+	const loadBrokers = useCallback(() => {
+		api
+			.getBrokers()
+			.then((rows) => {
+				const active = rows.filter((b) => b.active);
+				setBrokers(active);
+				if (!selectedBroker && active.length > 0) {
+					setSelectedBroker(active[0]);
+				}
+			})
+			.catch(() => {});
+	}, [selectedBroker]);
+	useEffect(() => {
+		loadBrokers();
+	}, [loadBrokers]);
+
 	const brokerRef = useRef(selectedBroker);
 	brokerRef.current = selectedBroker;
 	const listingRef = useRef(selectedListing);
@@ -36,10 +52,27 @@ export function ChatPage() {
 		() =>
 			new DefaultChatTransport({
 				api: "/api/chat",
-				body: () => ({
-					brokerProfile: brokerRef.current,
-					listingText: listingRef.current.rawText,
-				}),
+				body: () => {
+					const b = brokerRef.current;
+					return {
+						brokerProfile: b
+							? {
+									name: b.name,
+									firma: b.firma,
+									region: b.region,
+									spezialisierung: b.spezialisierung ?? "",
+									erfahrungJahre: b.erfahrungJahre ?? 0,
+									provision: b.provision ?? "",
+									arbeitsweise: b.arbeitsweise ?? "",
+									leistungen: b.leistungen ?? [],
+									besonderheiten: b.besonderheiten ?? [],
+									telefon: b.telefon ?? "",
+									email: b.email,
+								}
+							: undefined,
+						listingText: listingRef.current.rawText,
+					};
+				},
 			}),
 		[],
 	);
@@ -67,7 +100,7 @@ export function ChatPage() {
 	}
 
 	async function handleGenerate() {
-		if (generating) return;
+		if (generating || !selectedBroker) return;
 		setGenerating(true);
 		setGenerateMeta(null);
 
@@ -138,58 +171,66 @@ export function ChatPage() {
 
 					{brokerExpanded && (
 						<div className="border-t px-3 py-3">
-							<div className="flex flex-col gap-1.5">
-								{TEST_BROKERS.map((broker) => (
-									<button
-										key={broker.id}
-										type="button"
-										onClick={() => {
-											if (broker.id !== selectedBroker.id) {
-												setSelectedBroker(broker);
-												setMessages([]);
-												setGenerateMeta(null);
-											}
-										}}
-										className={cn(
-											"w-full rounded-lg px-3 py-2.5 text-left transition-colors",
-											selectedBroker.id === broker.id
-												? "bg-primary text-primary-foreground"
-												: "hover:bg-muted",
-										)}
-									>
-										<p
+							{brokers.length === 0 ? (
+								<p className="text-xs text-muted-foreground px-3 py-2">
+									Keine Makler angelegt. Erstelle einen unter /brokers.
+								</p>
+							) : (
+								<div className="flex flex-col gap-1.5">
+									{brokers.map((broker) => (
+										<button
+											key={broker.id}
+											type="button"
+											onClick={() => {
+												if (broker.id !== selectedBroker?.id) {
+													setSelectedBroker(broker);
+													setMessages([]);
+													setGenerateMeta(null);
+												}
+											}}
 											className={cn(
-												"text-sm font-medium",
-												selectedBroker.id === broker.id
-													? "text-primary-foreground"
-													: "text-foreground",
+												"w-full rounded-lg px-3 py-2.5 text-left transition-colors",
+												selectedBroker?.id === broker.id
+													? "bg-primary text-primary-foreground"
+													: "hover:bg-muted",
 											)}
 										>
-											{broker.name}
-										</p>
-										<p
-											className={cn(
-												"mt-0.5 text-xs",
-												selectedBroker.id === broker.id
-													? "text-primary-foreground/70"
-													: "text-muted-foreground",
-											)}
-										>
-											{broker.firma}
-										</p>
-									</button>
-								))}
-							</div>
+											<p
+												className={cn(
+													"text-sm font-medium",
+													selectedBroker?.id === broker.id
+														? "text-primary-foreground"
+														: "text-foreground",
+												)}
+											>
+												{broker.name}
+											</p>
+											<p
+												className={cn(
+													"mt-0.5 text-xs",
+													selectedBroker?.id === broker.id
+														? "text-primary-foreground/70"
+														: "text-muted-foreground",
+												)}
+											>
+												{broker.firma}
+											</p>
+										</button>
+									))}
+								</div>
+							)}
 
-							<div className="mt-3 rounded-lg bg-muted px-3 py-2.5">
-								<p className="text-xs font-medium text-foreground">
-									{selectedBroker.spezialisierung}
-								</p>
-								<p className="mt-1 text-xs text-muted-foreground">
-									{selectedBroker.erfahrungJahre} Jahre &middot;{" "}
-									{selectedBroker.region}
-								</p>
-							</div>
+							{selectedBroker && (
+								<div className="mt-3 rounded-lg bg-muted px-3 py-2.5">
+									<p className="text-xs font-medium text-foreground">
+										{selectedBroker.spezialisierung}
+									</p>
+									<p className="mt-1 text-xs text-muted-foreground">
+										{selectedBroker.erfahrungJahre} Jahre &middot;{" "}
+										{selectedBroker.region}
+									</p>
+								</div>
+							)}
 						</div>
 					)}
 				</Card>
@@ -287,8 +328,8 @@ export function ChatPage() {
 					<div>
 						<h2 className="text-sm font-semibold">Chat</h2>
 						<p className="text-xs text-muted-foreground">
-							Verkäufer: {selectedListing.sellerName} &middot; Makler:{" "}
-							{selectedBroker.name}
+							Verkäufer: {selectedListing.sellerName}
+							{selectedBroker && <> &middot; Makler: {selectedBroker.name}</>}
 						</p>
 					</div>
 					{generateMeta && (

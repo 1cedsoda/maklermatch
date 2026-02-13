@@ -23,14 +23,6 @@ export enum PriceAssessment {
 	UNKNOWN = "unknown",
 }
 
-export enum ReplySentiment {
-	POSITIVE_OPEN = "positiv_offen",
-	POSITIVE_SHORT = "positiv_kurz",
-	NEUTRAL = "neutral",
-	NEGATIVE_POLITE = "negativ_ablehnend",
-	NEGATIVE_AGGRESSIVE = "negativ_aggressiv",
-}
-
 export enum FollowUpStage {
 	INITIAL = 0,
 	FOLLOWUP_1 = 1,
@@ -197,7 +189,6 @@ export interface ConversationState {
 	nextFollowupAt: Date | null;
 	replyReceived: boolean;
 	replyAt: Date | null;
-	replySentiment: ReplySentiment | null;
 	conversationActive: boolean;
 	listingStillActive: boolean;
 }
@@ -218,7 +209,6 @@ export function createConversationState(
 		nextFollowupAt: null,
 		replyReceived: false,
 		replyAt: null,
-		replySentiment: null,
 		conversationActive: true,
 		listingStillActive: true,
 	};
@@ -228,10 +218,5 @@ export function shouldStop(state: ConversationState): boolean {
 	if (!state.conversationActive) return true;
 	if (!state.listingStillActive) return true;
 	if (state.currentStage === FollowUpStage.DONE) return true;
-	if (
-		state.replySentiment === ReplySentiment.NEGATIVE_POLITE ||
-		state.replySentiment === ReplySentiment.NEGATIVE_AGGRESSIVE
-	)
-		return true;
 	return false;
 }

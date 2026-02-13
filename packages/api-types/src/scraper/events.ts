@@ -11,6 +11,8 @@ import type {
 	IngestListingsAck,
 	LogLinePayload,
 	ScraperTriggerPayload,
+	MessageSendPayload,
+	MessageSendResult,
 } from "./lifecycle";
 
 export const SocketEvents = {
@@ -22,6 +24,7 @@ export const SocketEvents = {
 	INGEST_LISTINGS: "listing:ingest",
 	SCRAPER_STATUS: "scraper:status",
 	SCRAPER_TRIGGER: "scraper:trigger",
+	MESSAGE_SEND: "message:send",
 	LOG_LINE: "log:line",
 } as const;
 
@@ -70,5 +73,9 @@ export interface ServerToScraperEvents {
 	[SocketEvents.SCRAPER_TRIGGER]: (
 		data: ScraperTriggerPayload,
 		ack: (response: { ok: true } | { error: string }) => void,
+	) => void;
+	[SocketEvents.MESSAGE_SEND]: (
+		data: MessageSendPayload,
+		ack: (response: MessageSendResult) => void,
 	) => void;
 }
