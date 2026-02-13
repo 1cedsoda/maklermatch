@@ -13,6 +13,9 @@ import questsRoutes from "./routes/quests";
 import sellersRoutes from "./routes/sellers";
 import { setupScraperSocket } from "./socket/scraper";
 import { startScheduler } from "./services/scheduler";
+import conversationsRoutes from "./routes/conversations";
+import { startSmtpReceiver } from "./email/smtp-receiver";
+import { startSendScheduler } from "./email/scheduler";
 
 const log = logger.child({ module: "server" });
 
@@ -34,6 +37,7 @@ app.use("/api/scraping-tasks", jwtAuth, scrapingTasksRoutes);
 app.use("/api/scraper", jwtAuth, scraperProxyRoutes);
 app.use("/api/quests", jwtAuth, questsRoutes);
 app.use("/api/sellers", jwtAuth, sellersRoutes);
+app.use("/api/conversations", jwtAuth, conversationsRoutes);
 
 // Run migrations on startup
 migrate(db, { migrationsFolder: "./drizzle" });
@@ -48,4 +52,10 @@ setupScraperSocket(io);
 server.listen(port, () => {
 	log.info(`API server running on port ${port}`);
 	startScheduler();
+
+	// Start email subsystem if SMTP is configured
+	if (process.env.SMTP_RECEIVER_PORT || process.env.SMTP_RECEIVER_DOMAIN) {
+		startSmtpReceiver();
+		startSendScheduler();
+	}
 });
