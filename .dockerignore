@@ -1,0 +1,12 @@
+node_modules/
+packages/*/node_modules/
+.git/
+.claude/
+.DS_Store
+dist/
+html/
+data/
+proxies.txt
+deployment/
+biome.json
+lefthook.yml

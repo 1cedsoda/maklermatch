@@ -1,8 +1,9 @@
-export { scrapeListingPages } from "./scrape-listing-pages";
-export { launchProxifiedBrowser } from "./browser";
+export { scrapeListingPages, type ScrapeOptions } from "./scrape-listing-pages";
+export { launchBrowser } from "./browser";
 export { crawlAllPages } from "./crawl";
 export { extractListings, type KleinanzeigenListing } from "./extract-listings";
 export { extractPagination, type Pagination } from "./extract-pagination";
+export { logger } from "./logger";
 export {
 	searchViaStartpage,
 	dismissCookieBanner,
@@ -11,7 +12,5 @@ export {
 	setLocation,
 	waitForListings,
 } from "./navigation";
-export { randomProxy, verifyProxy, type Proxy } from "./proxy";
+export { loadProxies, type Proxy } from "./proxy";
 export type { Result } from "./result";
-export { retry } from "./retry";
-export { randomUserAgent } from "./useragent";

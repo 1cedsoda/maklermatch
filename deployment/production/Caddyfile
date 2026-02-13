@@ -1,0 +1,18 @@
+{
+	email ssl@phlpp.sh
+}
+
+eliteballknowledge.phlpp.sh:8443 {
+	reverse_proxy scraping-server:3000
+
+	log {
+		output stdout
+		format console
+	}
+
+	header {
+		-Server
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+	}
+}

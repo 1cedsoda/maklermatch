@@ -1,0 +1,41 @@
+services:
+  scraping-server:
+    build:
+      context: ../..
+      dockerfile: packages/scraping-server/Dockerfile
+    container_name: scraping-server
+    restart: unless-stopped
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - TZ=Europe/Berlin
+    volumes:
+      - scraper-data:/app/packages/scraping-server/data
+      - ./proxies.txt:/app/packages/scraping/src/proxies.txt:ro
+    shm_size: "2gb"
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "8443:8443"
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - internal
+    depends_on:
+      - scraping-server
+
+volumes:
+  scraper-data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  internal:

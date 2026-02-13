@@ -1,70 +1,48 @@
-import { chromium } from "playwright-extra";
-import stealth from "puppeteer-extra-plugin-stealth";
-import type { Browser, BrowserContext, Page } from "patchright";
-import type { Result } from "./result";
-import { retry } from "./retry";
-import { randomProxy, verifyProxy } from "./proxy";
-import { randomUserAgent } from "./useragent";
+import { chromium } from "patchright";
+import type { BrowserIdentity } from "@scraper/humanize";
+import { logger } from "./logger";
 
-chromium.use(stealth());
+const log = logger.child({ module: "browser" });
 
-export async function launchBrowser() {
-	const userAgent = randomUserAgent();
-	const proxy = randomProxy();
-	console.log("Launching stealth browser with proxy...");
-	console.log(`Proxy: ${proxy.server}`);
-	console.log(`User-Agent: ${userAgent}`);
+export async function launchBrowser(
+	identity: BrowserIdentity,
+	{ headless = process.env.HEADLESS !== "false" } = {},
+) {
+	log.info(
+		{
+			proxy: identity.proxy.server,
+			userAgent: identity.userAgent,
+			headless,
+			viewport: identity.viewport,
+		},
+		"Launching browser...",
+	);
 
 	const browser = await chromium.launch({
-		headless: false,
-		proxy,
+		headless,
+		proxy: identity.proxy,
+		args: [
+			"--disable-blink-features=AutomationControlled",
+			"--disable-features=WebRtcHideLocalIpsWithMdns",
+			"--enforce-webrtc-ip-permission-check",
+			"--force-webrtc-ip-handling-policy=disable_non_proxied_udp",
+		],
 	});
 
 	const context = await browser.newContext({
-		viewport: { width: 1920, height: 1080 },
-		userAgent,
-		locale: "de-DE",
-		timezoneId: "Europe/Berlin",
+		viewport: identity.viewport,
+		screen: identity.screen,
+		deviceScaleFactor: identity.deviceScaleFactor,
+		userAgent: identity.userAgent,
+		locale: identity.locale,
+		timezoneId: identity.timezoneId,
+		extraHTTPHeaders: {
+			"Accept-Language": identity.acceptLanguage,
+		},
 	});
 
-	await context.route("**/*", (route) => {
-		const type = route.request().resourceType();
-		if (type === "image" || type === "media" || type === "font") {
-			return route.abort();
-		}
-		return route.continue();
-	});
+	const page = await context.newPage();
 
-	return { browser, context };
-}
-
-type VerifiedBrowser = {
-	browser: Browser;
-	context: BrowserContext;
-	page: Page;
-};
-
-export async function launchProxifiedBrowser(
-	maxRetries = 5,
-): Promise<Result<VerifiedBrowser>> {
-	return retry<VerifiedBrowser>(
-		async () => {
-			const launched = await launchBrowser();
-			const page = (await launched.context.newPage()) as unknown as Page;
-			const browser = launched.browser as unknown as Browser;
-			const context = launched.context as unknown as BrowserContext;
-
-			const result = await verifyProxy(page);
-			if (result.ok) {
-				return { ok: true, value: { browser, context, page } };
-			}
-
-			await browser.close();
-			return { ok: false, error: result.error };
-		},
-		maxRetries,
-		(error, attempt) => {
-			console.warn(`Attempt ${attempt} failed: ${error.message}`);
-		},
-	);
+	log.info("Browser launched");
+	return { browser, context, page };
 }

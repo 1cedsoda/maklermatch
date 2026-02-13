@@ -1,4 +1,5 @@
-import { launchProxifiedBrowser } from "./browser";
+import type { BrowserIdentity } from "@scraper/humanize";
+import { launchBrowser } from "./browser";
 import {
 	searchViaStartpage,
 	dismissCookieBanner,
@@ -8,29 +9,63 @@ import {
 	waitForListings,
 } from "./navigation";
 import { crawlAllPages } from "./crawl";
+import { logger } from "./logger";
 import type { Result } from "./result";
 
-export async function scrapeListingPages(
-	city: string,
-): Promise<Result<string[]>> {
-	const result = await launchProxifiedBrowser();
-	if (!result.ok) return result;
+const log = logger.child({ module: "scrape" });
 
-	const { browser, page } = result.value;
+export interface ScrapeOptions {
+	location: string;
+	identity: BrowserIdentity;
+	maxPages?: number;
+	headless?: boolean;
+}
+
+export async function scrapeListingPages(
+	options: ScrapeOptions,
+): Promise<Result<string[]>> {
+	log.info(
+		{
+			location: options.location,
+			maxPages: options.maxPages ?? "unlimited",
+			proxy: options.identity.proxy.server,
+		},
+		"Starting scrape",
+	);
+
+	const { browser, page } = await launchBrowser(options.identity, {
+		headless: options.headless,
+	});
 
 	try {
+		log.info("Step 1/6: Searching via Startpage...");
 		const kleinanzeigenPage = await searchViaStartpage(page);
+
+		log.info("Step 2/6: Dismissing cookie banner...");
 		await dismissCookieBanner(kleinanzeigenPage);
+
+		log.info("Step 3/6: Navigating to category...");
 		await navigateToCategory(kleinanzeigenPage);
+
+		log.info("Step 4/6: Filtering private listings...");
 		await filterPrivateListings(kleinanzeigenPage);
-		await setLocation(kleinanzeigenPage, city);
+
+		log.info("Step 5/6: Setting location...");
+		await setLocation(kleinanzeigenPage, options.location);
+
+		log.info("Step 6/6: Waiting for listings...");
 		await waitForListings(kleinanzeigenPage);
 
-		const pages = await crawlAllPages(kleinanzeigenPage);
+		log.info("All navigation steps complete. Starting crawl...");
+		const pages = await crawlAllPages(kleinanzeigenPage, options.maxPages);
+		log.info({ pageCount: pages.length }, "Scrape finished successfully");
 		return { ok: true, value: pages };
 	} catch (e) {
-		return { ok: false, error: e as Error };
+		const error = e as Error;
+		log.error({ err: error }, "Scrape failed");
+		return { ok: false, error };
 	} finally {
+		log.info("Closing browser...");
 		await browser.close();
 	}
 }
