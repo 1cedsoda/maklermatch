@@ -13,7 +13,11 @@ import { PersonalizationEngine } from "./personalization";
 import { PostProcessor } from "./post-processor";
 import { Safeguard } from "./safeguard";
 import { SpamGuard } from "./spam-guard";
-import { buildFollowupPrompt, buildGenerationPrompt } from "./templates";
+import {
+	type MessagePersona,
+	buildFollowupPrompt,
+	buildGenerationPrompt,
+} from "./templates";
 
 const SKIP_TOKEN = "[SKIP]";
 
@@ -37,13 +41,18 @@ export class MessageGenerator {
 	private postProcessor = new PostProcessor();
 	private safeguard: Safeguard;
 	private delay: DelayCalculator;
+	private persona?: MessagePersona;
 	private sentHashes = new Set<string>();
 
-	constructor(llmClient: LLMClient, opts: { testMode?: boolean } = {}) {
+	constructor(
+		llmClient: LLMClient,
+		opts: { testMode?: boolean; persona?: MessagePersona } = {},
+	) {
 		this.llm = llmClient;
 		this.spamGuard = new SpamGuard(llmClient);
 		this.safeguard = new Safeguard(llmClient);
 		this.delay = new DelayCalculator({ testMode: opts.testMode });
+		this.persona = opts.persona;
 	}
 
 	async generate(
@@ -121,7 +130,11 @@ export class MessageGenerator {
 		);
 		const stageNum = stage === FollowUpStage.FOLLOWUP_1 ? 1 : 2;
 
-		let [systemPrompt, userPrompt] = buildFollowupPrompt(signals, stageNum);
+		let [systemPrompt, userPrompt] = buildFollowupPrompt(
+			signals,
+			stageNum,
+			this.persona,
+		);
 
 		for (let attempt = 1; attempt <= MAX_GENERATION_RETRIES + 1; attempt++) {
 			const rawMessage = this.cleanMessage(
@@ -204,6 +217,7 @@ export class MessageGenerator {
 			signals,
 			personalization,
 			variant,
+			this.persona,
 		);
 
 		for (let attempt = 1; attempt <= MAX_GENERATION_RETRIES + 1; attempt++) {

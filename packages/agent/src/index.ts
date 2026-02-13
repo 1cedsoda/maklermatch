@@ -4,7 +4,7 @@ export { createUserMessage, createAgentMessage } from "./types";
 export { handleChatRequest } from "./agent";
 export type { AgentConfig } from "./agent";
 
-export { SYSTEM_PROMPT, buildSystemPrompt } from "./prompt";
+export { buildSystemPrompt } from "./prompt";
 export type { BrokerInfo } from "./prompt";
 
 export { createLLMClient } from "./llm-client";

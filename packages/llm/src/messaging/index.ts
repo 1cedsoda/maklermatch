@@ -34,6 +34,7 @@ export { DelayCalculator } from "./delay-calculator";
 export type { DelayResult } from "./delay-calculator";
 export { FollowUpEngine } from "./followup-engine";
 export { OutcomeTracker } from "./outcome-tracker";
+export type { MessagePersona } from "./templates";
 export {
 	buildListingContext,
 	buildPersonalizationContext,
