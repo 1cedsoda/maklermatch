@@ -66,7 +66,7 @@ export function DashboardPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-sm font-medium text-muted-foreground">
-							Recent Scraping Tasks
+							Recent Scraping Runs
 						</CardTitle>
 					</CardHeader>
 					<CardContent>

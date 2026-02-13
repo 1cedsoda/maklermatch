@@ -14,7 +14,9 @@ import { TargetDetailPage } from "@/pages/target-detail";
 import { SellersPage } from "@/pages/sellers";
 import { SellerDetailPage } from "@/pages/seller-detail";
 import { ChatPage } from "@/pages/chat";
+import { ConversationsPage } from "@/pages/conversations";
 import { BrokersPage } from "@/pages/brokers";
+import { CompaniesPage } from "@/pages/companies";
 
 export function App() {
 	return (
@@ -31,6 +33,7 @@ export function App() {
 					>
 						<Route index element={<DashboardPage />} />
 						<Route path="chat" element={<ChatPage />} />
+						<Route path="conversations" element={<ConversationsPage />} />
 						<Route path="listings" element={<ListingsPage />} />
 						<Route path="listings/:id" element={<ListingDetailPage />} />
 						<Route path="sellers" element={<SellersPage />} />
@@ -43,6 +46,7 @@ export function App() {
 							element={<ScrapingTaskDetailPage />}
 						/>
 						<Route path="scraper" element={<ScraperPage />} />
+						<Route path="companies" element={<CompaniesPage />} />
 						<Route path="brokers" element={<BrokersPage />} />
 					</Route>
 					<Route path="*" element={<Navigate to="/" replace />} />

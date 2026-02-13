@@ -371,7 +371,7 @@ export function TargetDetailPage() {
 			</Card>
 
 			<div className="space-y-3">
-				<h3 className="text-lg font-semibold">Scraping Tasks</h3>
+				<h3 className="text-lg font-semibold">Scraping Runs</h3>
 				{tasks.length === 0 ? (
 					<p className="text-muted-foreground text-sm">No scraping tasks yet</p>
 				) : (

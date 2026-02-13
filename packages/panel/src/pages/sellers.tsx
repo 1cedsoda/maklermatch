@@ -32,7 +32,7 @@ export function SellersPage() {
 	return (
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
-				<h2 className="text-2xl font-bold">Sellers</h2>
+				<h2 className="text-2xl font-bold">Leads</h2>
 				<p className="text-sm text-muted-foreground">{total} total</p>
 			</div>
 
