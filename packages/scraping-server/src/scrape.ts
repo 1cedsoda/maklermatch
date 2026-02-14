@@ -45,6 +45,7 @@ function toIngestListing(
 		location: listing.location,
 		distance: (listing.extra?.distance as string) ?? null,
 		date: listing.date,
+		dateParsed: listing.dateParsed,
 		imageUrl: listing.imageUrl,
 		imageCount: listing.imageCount,
 		isPrivate: listing.isPrivate,
@@ -103,6 +104,7 @@ function createScrapeHandler(
 				location: l.location,
 				distance: (l.extra?.distance as string) ?? null,
 				date: l.date,
+				dateParsed: l.dateParsed,
 				imageUrl: l.imageUrl,
 				imageCount: l.imageCount,
 				isPrivate: l.isPrivate,
@@ -219,13 +221,13 @@ export async function executeScrapePass(
 		const kleinanzeigenPage = await searchViaStartpage(page);
 		await dismissCookieBanner(kleinanzeigenPage);
 		await dismissLoginOverlay(kleinanzeigenPage);
-		await navigateToCategory(kleinanzeigenPage, categoryInfo);
-		await setLocation(kleinanzeigenPage, city);
+		(await navigateToCategory(kleinanzeigenPage, categoryInfo)).getOrThrow();
+		(await setLocation(kleinanzeigenPage, city)).getOrThrow();
 		if (search.isPrivate) {
-			await filterPrivateListings(kleinanzeigenPage);
+			(await filterPrivateListings(kleinanzeigenPage)).getOrThrow();
 		}
 		if (search.sorting) {
-			await selectSorting(kleinanzeigenPage, search.sorting);
+			(await selectSorting(kleinanzeigenPage, search.sorting)).getOrThrow();
 		}
 		await waitForListings(kleinanzeigenPage);
 
@@ -235,16 +237,36 @@ export async function executeScrapePass(
 			maxPages,
 		});
 
+		if (!result.ok) {
+			// Browser closed mid-scrape — report partial stats + error
+			const partial = result.error.partialResult;
+			log.warn(
+				{ ...partial, cause: result.error.cause },
+				"Browser closed during scrape, reporting partial results",
+			);
+			await apiClient.scrapeResult(
+				taskId,
+				partial.pagesScraped,
+				partial.listingsFound,
+				partial.detailsScraped,
+				partial.detailsFailed,
+				[],
+			);
+			await apiClient.scrapeError(taskId, result.error.message);
+			return;
+		}
+
 		// ── Report final stats ──
+		const stats = result.value;
 		await apiClient.scrapeResult(
 			taskId,
-			result.pagesScraped,
-			result.listingsFound,
-			result.detailsScraped,
-			result.detailsFailed,
+			stats.pagesScraped,
+			stats.listingsFound,
+			stats.detailsScraped,
+			stats.detailsFailed,
 			[],
 		);
-		log.info(result, "Scrape pass completed successfully");
+		log.info(stats, "Scrape pass completed successfully");
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		log.error({ err: error }, "Scrape pass failed");

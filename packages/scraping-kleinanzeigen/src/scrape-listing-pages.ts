@@ -51,16 +51,28 @@ export async function scrapeListingPages(
 		await dismissLoginOverlay(kleinanzeigenPage);
 
 		log.info("Step 3/6: Navigating to category...");
-		await navigateToCategory(
+		const categoryResult = await navigateToCategory(
 			kleinanzeigenPage,
 			options.category ?? DEFAULT_CATEGORY,
 		);
+		if (!categoryResult.ok) {
+			return { ok: false, error: categoryResult.error };
+		}
 
 		log.info("Step 4/6: Setting location...");
-		await setLocation(kleinanzeigenPage, options.location);
+		const locationResult = await setLocation(
+			kleinanzeigenPage,
+			options.location,
+		);
+		if (!locationResult.ok) {
+			return { ok: false, error: locationResult.error };
+		}
 
 		log.info("Step 5/6: Filtering private listings...");
-		await filterPrivateListings(kleinanzeigenPage);
+		const filterResult = await filterPrivateListings(kleinanzeigenPage);
+		if (!filterResult.ok) {
+			return { ok: false, error: filterResult.error };
+		}
 
 		log.info("Step 6/6: Waiting for listings...");
 		await waitForListings(kleinanzeigenPage);

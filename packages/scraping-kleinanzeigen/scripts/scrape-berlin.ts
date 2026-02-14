@@ -202,12 +202,12 @@ async function main() {
 		await dismissCookieBanner(kleinanzeigenPage);
 		await dismissLoginOverlay(kleinanzeigenPage);
 		const categoryInfo = getCategoryById(search.category)!;
-		await navigateToCategory(kleinanzeigenPage, categoryInfo);
-		await setLocation(kleinanzeigenPage, city);
+		(await navigateToCategory(kleinanzeigenPage, categoryInfo)).getOrThrow();
+		(await setLocation(kleinanzeigenPage, city)).getOrThrow();
 		if (search.isPrivate) {
-			await filterPrivateListings(kleinanzeigenPage);
+			(await filterPrivateListings(kleinanzeigenPage)).getOrThrow();
 		}
-		await selectSorting(kleinanzeigenPage, "SORTING_DATE");
+		(await selectSorting(kleinanzeigenPage, "SORTING_DATE")).getOrThrow();
 		await waitForListings(kleinanzeigenPage);
 
 		// ── Incremental scrape ──

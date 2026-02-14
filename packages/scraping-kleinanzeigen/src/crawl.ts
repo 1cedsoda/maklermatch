@@ -1,5 +1,6 @@
 import { Window } from "happy-dom";
 import type { Page } from "patchright";
+import { Result } from "typescript-result";
 import {
 	humanBrowse,
 	humanClick,
@@ -11,6 +12,7 @@ import {
 import { scrapeListingDetail } from "./extract-listing-detail";
 import type { KleinanzeigenListingDetail } from "./extract-listing-detail";
 import { extractListings } from "./extract-listings";
+import { BrowserClosedError, isTargetClosedError } from "./errors";
 import type { ScrapeHandler, ScrapeResult } from "./handler";
 import { logger } from "./logger";
 
@@ -183,6 +185,7 @@ function parsePageListings(html: string) {
 		priceParsed: l.priceParsed,
 		location: l.location,
 		date: l.date,
+		dateParsed: l.dateParsed,
 		imageUrl: l.imageUrl,
 		imageCount: l.imageCount,
 		isPrivate: l.isPrivate,
@@ -200,7 +203,7 @@ export async function scrapeIncrementally(
 	page: Page,
 	handler: ScrapeHandler,
 	options?: { maxPages?: number },
-): Promise<ScrapeResult> {
+): Promise<Result<ScrapeResult, BrowserClosedError>> {
 	let pagesScraped = 0;
 	let listingsFound = 0;
 	let detailsScraped = 0;
@@ -213,108 +216,135 @@ export async function scrapeIncrementally(
 	);
 
 	while (true) {
-		pagesScraped++;
-		log.info({ page: pagesScraped }, "Capturing HTML...");
-		const html = await page.content();
-		log.info(
-			{ page: pagesScraped, sizeKB: (html.length / 1024).toFixed(1) },
-			"Page captured",
-		);
+		try {
+			pagesScraped++;
+			log.info({ page: pagesScraped }, "Capturing HTML...");
+			const html = await page.content();
+			log.info(
+				{ page: pagesScraped, sizeKB: (html.length / 1024).toFixed(1) },
+				"Page captured",
+			);
 
-		// Extract listing URLs from DOM (for detail page navigation)
-		const articleData = await page.evaluate(() =>
-			Array.from(document.querySelectorAll("article.aditem"))
-				.map((a) => ({
-					id: a.getAttribute("data-adid") || "",
-					href: a.getAttribute("data-href") || "",
-				}))
-				.filter((item) => item.id && item.href),
-		);
-		const urlMap = new Map(articleData.map(({ id, href }) => [id, href]));
+			// Extract listing URLs from DOM (for detail page navigation)
+			const articleData = await page.evaluate(() =>
+				Array.from(document.querySelectorAll("article.aditem"))
+					.map((a) => ({
+						id: a.getAttribute("data-adid") || "",
+						href: a.getAttribute("data-href") || "",
+					}))
+					.filter((item) => item.id && item.href),
+			);
+			const urlMap = new Map(articleData.map(({ id, href }) => [id, href]));
 
-		// Grab next page URL before navigating away to detail pages
-		nextUrl = await page.evaluate(() => {
-			const el = document.querySelector<HTMLAnchorElement>("a.pagination-next");
-			return el?.getAttribute("href") || null;
-		});
+			// Grab next page URL before navigating away to detail pages
+			nextUrl = await page.evaluate(() => {
+				const el =
+					document.querySelector<HTMLAnchorElement>("a.pagination-next");
+				return el?.getAttribute("href") || null;
+			});
 
-		// Parse listings from HTML
-		const parsed = parsePageListings(html);
-		listingsFound += parsed.length;
-		log.info(
-			{ count: parsed.length, page: pagesScraped },
-			"Parsed listings from page",
-		);
+			// Parse listings from HTML
+			const parsed = parsePageListings(html);
+			listingsFound += parsed.length;
+			log.info(
+				{ count: parsed.length, page: pagesScraped },
+				"Parsed listings from page",
+			);
 
-		// Call handler — ingests non-detail listings, returns IDs needing details
-		const { detailNeeded } = await handler.onListingsDiscovered(parsed);
-		const detailSet = new Set(detailNeeded);
-		const pageDetailQueue: { id: string; url: string }[] = [];
-		for (const [id, href] of urlMap) {
-			if (detailSet.has(id)) {
-				pageDetailQueue.push({ id, url: href });
-			}
-		}
-		log.info(
-			{ detailQueued: pageDetailQueue.length, page: pagesScraped },
-			"Detail queue for page",
-		);
-
-		// Visit detail pages for this listing page
-		if (pageDetailQueue.length > 0) {
-			const shuffled = shuffle(pageDetailQueue);
-			for (let i = 0; i < shuffled.length; i++) {
-				const { url } = shuffled[i];
-				const fullUrl = url.startsWith("http") ? url : `${BASE_URL}${url}`;
-				log.info(
-					{ index: i + 1, total: shuffled.length, url: fullUrl },
-					"Visiting detail page...",
-				);
-
-				try {
-					await humanBrowse(page);
-					await page.goto(fullUrl, { waitUntil: "domcontentloaded" });
-					log.info({ url: page.url() }, "Landed on detail page");
-					await page.waitForSelector("#viewad-title", { timeout: 15000 });
-					await humanScroll(page);
-
-					const detail = await scrapeListingDetail(page);
-					await handler.onDetailScraped(detail);
-					detailsScraped++;
-					log.info(
-						{ index: i + 1, id: detail.id, title: detail.title },
-						"Detail extracted and ingested",
-					);
-				} catch (err) {
-					detailsFailed++;
-					log.warn(
-						{ url: fullUrl, err },
-						"Failed to visit detail page, skipping",
-					);
+			// Call handler — ingests non-detail listings, returns IDs needing details
+			const { detailNeeded } = await handler.onListingsDiscovered(parsed);
+			const detailSet = new Set(detailNeeded);
+			const pageDetailQueue: { id: string; url: string }[] = [];
+			for (const [id, href] of urlMap) {
+				if (detailSet.has(id)) {
+					pageDetailQueue.push({ id, url: href });
 				}
 			}
-		}
+			log.info(
+				{ detailQueued: pageDetailQueue.length, page: pagesScraped },
+				"Detail queue for page",
+			);
 
-		if (options?.maxPages && pagesScraped >= options.maxPages) {
-			log.info({ maxPages: options.maxPages }, "Reached maxPages limit");
-			break;
-		}
+			// Visit detail pages for this listing page
+			if (pageDetailQueue.length > 0) {
+				const shuffled = shuffle(pageDetailQueue);
+				for (let i = 0; i < shuffled.length; i++) {
+					const { url } = shuffled[i];
+					const fullUrl = url.startsWith("http") ? url : `${BASE_URL}${url}`;
+					log.info(
+						{ index: i + 1, total: shuffled.length, url: fullUrl },
+						"Visiting detail page...",
+					);
 
-		if (!nextUrl) {
-			log.info("No next page link found, stopping");
-			break;
-		}
+					try {
+						await humanBrowse(page);
+						await page.goto(fullUrl, { waitUntil: "domcontentloaded" });
+						log.info({ url: page.url() }, "Landed on detail page");
+						await page.waitForSelector("#viewad-title", {
+							timeout: 15000,
+						});
+						await humanScroll(page);
 
-		const fullNextUrl = `${BASE_URL}${nextUrl}`;
-		log.info(
-			{ page: pagesScraped, nextUrl: fullNextUrl },
-			"Navigating to next page...",
-		);
-		await humanBrowse(page);
-		await page.goto(fullNextUrl, { waitUntil: "domcontentloaded" });
-		log.info({ url: page.url() }, "Landed on next page");
-		await page.waitForSelector("#srchrslt-adtable");
-		await humanScroll(page);
+						const detail = await scrapeListingDetail(page);
+						await handler.onDetailScraped(detail);
+						detailsScraped++;
+						log.info(
+							{ index: i + 1, id: detail.id, title: detail.title },
+							"Detail extracted and ingested",
+						);
+					} catch (err) {
+						if (isTargetClosedError(err)) {
+							throw err;
+						}
+						detailsFailed++;
+						log.warn(
+							{ url: fullUrl, err },
+							"Failed to visit detail page, skipping",
+						);
+					}
+				}
+			}
+
+			if (options?.maxPages && pagesScraped >= options.maxPages) {
+				log.info({ maxPages: options.maxPages }, "Reached maxPages limit");
+				break;
+			}
+
+			if (!nextUrl) {
+				log.info("No next page link found, stopping");
+				break;
+			}
+
+			const fullNextUrl = `${BASE_URL}${nextUrl}`;
+			log.info(
+				{ page: pagesScraped, nextUrl: fullNextUrl },
+				"Navigating to next page...",
+			);
+			await humanBrowse(page);
+			await page.goto(fullNextUrl, { waitUntil: "domcontentloaded" });
+			log.info({ url: page.url() }, "Landed on next page");
+			await page.waitForSelector("#srchrslt-adtable");
+			await humanScroll(page);
+		} catch (err) {
+			if (isTargetClosedError(err)) {
+				log.warn(
+					{ pagesScraped, listingsFound, detailsScraped, detailsFailed },
+					"Browser closed unexpectedly, returning partial results",
+				);
+				return Result.error(
+					new BrowserClosedError(
+						{
+							pagesScraped,
+							listingsFound,
+							detailsScraped,
+							detailsFailed,
+						},
+						err instanceof Error ? err : new Error(String(err)),
+					),
+				);
+			}
+			throw err;
+		}
 	}
 
 	log.info(
@@ -327,7 +357,12 @@ export async function scrapeIncrementally(
 		"Incremental scrape complete",
 	);
 
-	return { pagesScraped, listingsFound, detailsScraped, detailsFailed };
+	return Result.ok({
+		pagesScraped,
+		listingsFound,
+		detailsScraped,
+		detailsFailed,
+	});
 }
 
 /**

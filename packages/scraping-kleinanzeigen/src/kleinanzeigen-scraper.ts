@@ -42,6 +42,7 @@ export class KleinanzeigenScraper implements Scraper {
 					priceParsed: l.priceParsed,
 					location: l.location,
 					date: l.date,
+					dateParsed: l.dateParsed,
 					imageUrl: l.imageUrl,
 					imageCount: l.imageCount,
 					isPrivate: l.isPrivate,

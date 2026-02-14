@@ -11,6 +11,7 @@ export interface ScrapedListing {
 	priceParsed: number | null;
 	location: string | null;
 	date: string | null;
+	dateParsed: string | null;
 	imageUrl: string | null;
 	imageCount: number;
 	isPrivate: boolean;

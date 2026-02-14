@@ -1,4 +1,5 @@
 export { KleinanzeigenScraper } from "./kleinanzeigen-scraper";
+export { BrowserClosedError, isTargetClosedError } from "./errors";
 export { scrapeListingPages, type ScrapeOptions } from "./scrape-listing-pages";
 export { launchBrowser } from "./browser";
 export {
@@ -28,9 +29,12 @@ export {
 	dismissCookieBanner,
 	dismissLoginOverlay,
 	navigateToCategory,
+	filterByAnbieter,
 	filterPrivateListings,
 	selectSorting,
 	setLocation,
 	waitForListings,
+	type NavigationOptions,
+	type AnbieterType,
 } from "./navigation";
 export { extractSorting, type SortingInfo } from "./extract-sorting";
