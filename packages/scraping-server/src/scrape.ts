@@ -12,6 +12,7 @@ import {
 	launchBrowser,
 	searchViaStartpage,
 	dismissCookieBanner,
+	dismissLoginOverlay,
 	navigateToCategory,
 	filterPrivateListings,
 	selectSorting,
@@ -217,6 +218,7 @@ export async function executeScrapePass(
 		log.info("Navigating to Kleinanzeigen...");
 		const kleinanzeigenPage = await searchViaStartpage(page);
 		await dismissCookieBanner(kleinanzeigenPage);
+		await dismissLoginOverlay(kleinanzeigenPage);
 		await navigateToCategory(kleinanzeigenPage, categoryInfo);
 		await setLocation(kleinanzeigenPage, city);
 		if (search.isPrivate) {

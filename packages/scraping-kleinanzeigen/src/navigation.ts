@@ -1,4 +1,5 @@
 import type { Page } from "patchright";
+import type { SortingOption } from "@scraper/api-types";
 import {
 	humanClick,
 	humanFill,
@@ -130,6 +131,75 @@ export async function dismissCookieBanner(page: Page) {
 			throw err;
 		}
 		log.info("No cookie banner appeared");
+	}
+}
+
+const LOGIN_OVERLAY_CLOSE_SELECTOR =
+	'button[aria-label="Willkommens-Popup Schließen"]';
+
+export async function dismissLoginOverlay(page: Page) {
+	log.info("Looking for login overlay...");
+	try {
+		const closeButton = page.locator(LOGIN_OVERLAY_CLOSE_SELECTOR);
+		await closeButton.waitFor({ timeout: 3000 });
+
+		log.info("Login overlay found, dismissing...");
+		await humanDelay(page, 600);
+
+		const overlayGone = async () => {
+			await closeButton.waitFor({ state: "hidden", timeout: 3000 });
+		};
+
+		// Strategy 1: human-like click
+		await humanClick(page, closeButton);
+		try {
+			await overlayGone();
+			log.info("Login overlay dismissed");
+			return;
+		} catch {
+			log.warn("Login overlay still visible after human click");
+		}
+
+		// Strategy 2: force click
+		log.info("Retrying with force click...");
+		await closeButton.click({ force: true });
+		try {
+			await overlayGone();
+			log.info("Login overlay dismissed on force click");
+			return;
+		} catch {
+			log.warn("Login overlay still visible after force click");
+		}
+
+		// Strategy 3: JS-level click, then hide as fallback
+		log.info("Retrying with JS click...");
+		await page.evaluate((selector) => {
+			const btn = document.querySelector<HTMLElement>(selector);
+			btn?.click();
+		}, LOGIN_OVERLAY_CLOSE_SELECTOR);
+		try {
+			await overlayGone();
+			log.info("Login overlay dismissed via JS click");
+			return;
+		} catch {
+			log.warn("Login overlay still visible after JS click");
+		}
+
+		// Strategy 4: forcefully hide the overlay via JS
+		log.info("Hiding login overlay via JS...");
+		await page.evaluate((selector) => {
+			const btn = document.querySelector<HTMLElement>(selector);
+			const overlay = btn?.closest("astro-island") ?? btn?.closest("div");
+			if (overlay instanceof HTMLElement) {
+				overlay.style.display = "none";
+			}
+		}, LOGIN_OVERLAY_CLOSE_SELECTOR);
+		log.info("Login overlay hidden via JS");
+	} catch (err) {
+		if (err instanceof Error && err.message.includes("Login overlay")) {
+			throw err;
+		}
+		log.info("No login overlay appeared");
 	}
 }
 
@@ -317,7 +387,7 @@ export async function setLocation(page: Page, location: string) {
 	}
 }
 
-export async function selectSorting(page: Page, sorting: string) {
+export async function selectSorting(page: Page, sorting: SortingOption) {
 	log.info({ sorting }, "Selecting sorting option...");
 	const dropdown = page.locator("#sortingField-selector-inpt");
 	try {

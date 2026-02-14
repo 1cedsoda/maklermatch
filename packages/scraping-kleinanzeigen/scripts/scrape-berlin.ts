@@ -7,8 +7,10 @@ import {
 	launchBrowser,
 	searchViaStartpage,
 	dismissCookieBanner,
+	dismissLoginOverlay,
 	navigateToCategory,
 	filterPrivateListings,
+	selectSorting,
 	setLocation,
 	waitForListings,
 	scrapeIncrementally,
@@ -198,12 +200,14 @@ async function main() {
 		console.log("Navigating to Kleinanzeigen...");
 		const kleinanzeigenPage = await searchViaStartpage(page);
 		await dismissCookieBanner(kleinanzeigenPage);
+		await dismissLoginOverlay(kleinanzeigenPage);
 		const categoryInfo = getCategoryById(search.category)!;
 		await navigateToCategory(kleinanzeigenPage, categoryInfo);
 		await setLocation(kleinanzeigenPage, city);
 		if (search.isPrivate) {
 			await filterPrivateListings(kleinanzeigenPage);
 		}
+		await selectSorting(kleinanzeigenPage, "SORTING_DATE");
 		await waitForListings(kleinanzeigenPage);
 
 		// ── Incremental scrape ──

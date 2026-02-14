@@ -3,6 +3,7 @@ import { launchBrowser } from "./browser";
 import {
 	searchViaStartpage,
 	dismissCookieBanner,
+	dismissLoginOverlay,
 	navigateToCategory,
 	filterPrivateListings,
 	setLocation,
@@ -47,6 +48,7 @@ export async function scrapeListingPages(
 
 		log.info("Step 2/6: Dismissing cookie banner...");
 		await dismissCookieBanner(kleinanzeigenPage);
+		await dismissLoginOverlay(kleinanzeigenPage);
 
 		log.info("Step 3/6: Navigating to category...");
 		await navigateToCategory(

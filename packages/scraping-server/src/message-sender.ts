@@ -3,6 +3,7 @@ import { generateIdentity, loadProxies } from "@scraper/humanize";
 import {
 	launchBrowser,
 	dismissCookieBanner,
+	dismissLoginOverlay,
 } from "@scraper/scraping-kleinanzeigen";
 import { humanClick, humanFill, humanDelay } from "@scraper/humanize";
 import type { MessageSendPayload, MessageSendResult } from "@scraper/api-types";
@@ -48,6 +49,7 @@ export async function sendMessage(
 		});
 
 		await dismissCookieBanner(page);
+		await dismissLoginOverlay(page);
 		await humanDelay(page, 800);
 
 		log.info("Filling login form...");

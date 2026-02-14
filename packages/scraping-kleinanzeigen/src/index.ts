@@ -26,6 +26,7 @@ export { setLogLineHandler } from "./logger";
 export {
 	searchViaStartpage,
 	dismissCookieBanner,
+	dismissLoginOverlay,
 	navigateToCategory,
 	filterPrivateListings,
 	selectSorting,
