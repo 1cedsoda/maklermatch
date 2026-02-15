@@ -3,7 +3,8 @@ import { SocketEvents } from "@scraper/api-types";
 import {
 	getScraperSocket,
 	getConnectedScrapers,
-	getCurrentScrapingTaskId,
+	getAllRunningTaskIds,
+	getScraperIdForTask,
 } from "../socket/scraper";
 import {
 	getTargetById,
@@ -28,32 +29,26 @@ router.get("/status", async (_req, res) => {
 			.timeout(5000)
 			.emitWithAck(SocketEvents.SCRAPER_STATUS);
 
-		// Augment with current task info from server state
-		let currentTask: {
-			id: number;
-			targetId: number;
-			targetName: string;
-			targetLocation: string;
-		} | null = null;
-		const taskId = getCurrentScrapingTaskId();
-		if (taskId) {
-			const task = getScrapingTask(taskId);
-			if (task) {
-				const target = getTargetById(task.targetId);
-				if (target) {
-					currentTask = {
-						id: taskId,
-						targetId: target.id,
-						targetName: target.name,
-						targetLocation: target.location,
-					};
-				}
-			}
-		}
+		// Build active tasks array from server-side state
+		const runningTaskIds = getAllRunningTaskIds();
+		const activeTasks = runningTaskIds
+			.map((tid) => {
+				const task = getScrapingTask(tid);
+				const target = task ? getTargetById(task.targetId) : null;
+				if (!target) return null;
+				return {
+					id: tid,
+					targetId: target.id,
+					targetName: target.name,
+					targetLocation: target.location,
+				};
+			})
+			.filter((t) => t !== null);
 
 		res.json({
 			...scraperStatus,
-			currentTask,
+			currentTask: activeTasks[0] ?? null,
+			activeTasks,
 			scrapers: getConnectedScrapers(),
 		});
 	} catch {
@@ -92,6 +87,35 @@ router.post("/start", async (req, res) => {
 		res.json(result);
 	} catch {
 		res.status(504).json({ error: "Scraping server did not respond" });
+	}
+});
+
+router.post("/cancel", async (req, res) => {
+	const taskId = Number(req.body.taskId);
+	if (!taskId) {
+		res.status(400).json({ error: "taskId is required" });
+		return;
+	}
+
+	const scraperId = getScraperIdForTask(taskId);
+	if (!scraperId) {
+		res.status(404).json({ error: "Task not running on any scraper" });
+		return;
+	}
+
+	const socket = getScraperSocket(scraperId);
+	if (!socket) {
+		res.status(502).json({ error: "Scraper not connected" });
+		return;
+	}
+
+	try {
+		const result = await socket
+			.timeout(10_000)
+			.emitWithAck(SocketEvents.SCRAPER_CANCEL_TASK, { taskId });
+		res.json(result);
+	} catch {
+		res.status(504).json({ error: "Scraper did not respond" });
 	}
 });
 

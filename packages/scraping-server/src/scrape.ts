@@ -84,6 +84,7 @@ function shouldScrapeDetail(check: ListingCheckResult): boolean {
 function createScrapeHandler(
 	apiClient: ApiClient,
 	city: string,
+	taskId: number,
 ): { handler: ScrapeHandler; listingMap: Map<string, ScrapedListing> } {
 	const listingMap = new Map<string, ScrapedListing>();
 
@@ -127,7 +128,11 @@ function createScrapeHandler(
 			);
 			if (noDetailListings.length > 0) {
 				const ingestItems = noDetailListings.map((l) => toIngestListing(l));
-				const result = await apiClient.ingestListings(city, ingestItems);
+				const result = await apiClient.ingestListings(
+					city,
+					ingestItems,
+					taskId,
+				);
 				log.info(
 					{
 						ingested: noDetailListings.length,
@@ -164,7 +169,7 @@ function createScrapeHandler(
 			}
 
 			const ingestItem = toIngestListing(listing, detail);
-			const result = await apiClient.ingestListings(city, [ingestItem]);
+			const result = await apiClient.ingestListings(city, [ingestItem], taskId);
 			log.info(
 				{
 					id: detail.id,
@@ -187,6 +192,7 @@ export async function executeScrapePass(
 		targetId?: number;
 		maxPages?: number;
 		headless?: boolean;
+		signal?: AbortSignal;
 		onTaskStarted?: (taskId: number) => void;
 	},
 ) {
@@ -211,6 +217,17 @@ export async function executeScrapePass(
 		...(headless !== undefined && { headless }),
 	});
 
+	// Close browser when abort signal fires
+	const onAbort = () => browser.close().catch(() => {});
+	if (opts?.signal) {
+		if (opts.signal.aborted) {
+			await browser.close();
+			await apiClient.scrapeCancel(taskId);
+			return;
+		}
+		opts.signal.addEventListener("abort", onAbort, { once: true });
+	}
+
 	try {
 		// ── Navigation ──
 		const categoryInfo = getCategoryById(search.category);
@@ -232,7 +249,7 @@ export async function executeScrapePass(
 		await waitForListings(kleinanzeigenPage);
 
 		// ── Incremental scrape with callbacks ──
-		const { handler } = createScrapeHandler(apiClient, city);
+		const { handler } = createScrapeHandler(apiClient, city, taskId);
 		const result = await scrapeIncrementally(kleinanzeigenPage, handler, {
 			maxPages,
 		});
@@ -268,11 +285,16 @@ export async function executeScrapePass(
 		);
 		log.info(stats, "Scrape pass completed successfully");
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		log.error({ err: error }, "Scrape pass failed");
-
-		await apiClient.scrapeError(taskId, message);
+		if (opts?.signal?.aborted) {
+			log.info({ taskId }, "Scrape pass cancelled via abort signal");
+			await apiClient.scrapeCancel(taskId);
+		} else {
+			const message = error instanceof Error ? error.message : String(error);
+			log.error({ err: error }, "Scrape pass failed");
+			await apiClient.scrapeError(taskId, message);
+		}
 	} finally {
-		await browser.close();
+		opts?.signal?.removeEventListener("abort", onAbort);
+		await browser.close().catch(() => {});
 	}
 }

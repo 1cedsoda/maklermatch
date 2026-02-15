@@ -1,9 +1,10 @@
 import { eq } from "drizzle-orm";
-import type {
-	CategoryId,
-	CreateTargetRequest,
-	SortingOption,
-	UpdateTargetRequest,
+import {
+	type CategoryId,
+	type CreateTargetRequest,
+	type SortingOption,
+	type UpdateTargetRequest,
+	sortingSchema,
 } from "@scraper/api-types";
 import { db } from "../db";
 import { searchTargets } from "../db/schema";
@@ -64,7 +65,8 @@ export function targetToKleinanzeigenSearch(
 	return {
 		category: target.category as CategoryId,
 		location: target.location,
-		...(target.sorting != null
+		...(target.sorting != null &&
+		sortingSchema.safeParse(target.sorting).success
 			? { sorting: target.sorting as SortingOption }
 			: {}),
 		...(target.isPrivate != null ? { isPrivate: target.isPrivate } : {}),

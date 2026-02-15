@@ -28,18 +28,37 @@ class RingBuffer {
 }
 
 const buffers = new Map<string, RingBuffer>();
+const taskBuffers = new Map<number, RingBuffer>();
 
-export function pushLogLine(scraperId: string, line: string, ts: number): void {
+export function pushLogLine(
+	scraperId: string,
+	line: string,
+	ts: number,
+	taskId?: number,
+): void {
 	let buf = buffers.get(scraperId);
 	if (!buf) {
 		buf = new RingBuffer(MAX_LINES);
 		buffers.set(scraperId, buf);
 	}
 	buf.push({ line, ts });
+
+	if (taskId !== undefined) {
+		let tbuf = taskBuffers.get(taskId);
+		if (!tbuf) {
+			tbuf = new RingBuffer(MAX_LINES);
+			taskBuffers.set(taskId, tbuf);
+		}
+		tbuf.push({ line, ts });
+	}
 }
 
 export function getLogLines(scraperId: string): LogEntry[] {
 	return buffers.get(scraperId)?.getAll() ?? [];
+}
+
+export function getTaskLogLines(taskId: number): LogEntry[] {
+	return taskBuffers.get(taskId)?.getAll() ?? [];
 }
 
 export function getAllLogLines(): { scraperId: string; lines: LogEntry[] }[] {
@@ -51,4 +70,8 @@ export function getAllLogLines(): { scraperId: string; lines: LogEntry[] }[] {
 
 export function deleteLogBuffer(scraperId: string): void {
 	buffers.delete(scraperId);
+}
+
+export function deleteTaskLogBuffer(taskId: number): void {
+	taskBuffers.delete(taskId);
 }

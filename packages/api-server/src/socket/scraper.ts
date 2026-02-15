@@ -36,28 +36,58 @@ interface ScraperInfo {
 	cities: string[];
 	name: string;
 	socket: TypedSocket;
+	runningTasks: Set<number>;
+	maxConcurrency: number;
 }
 
 const scrapers = new Map<string, ScraperInfo>();
 
-// ─── Server-side scraper running state ───────────────────────
+// ─── Public helpers ──────────────────────────────────────────
 
-let currentScrapingTaskId: number | null = null;
-let disconnectCancelTimer: ReturnType<typeof setTimeout> | null = null;
+export function hasAvailableScraper(): boolean {
+	for (const info of scrapers.values()) {
+		if (info.runningTasks.size < info.maxConcurrency) return true;
+	}
+	return false;
+}
 
-export function isScraperRunning(): boolean {
-	return currentScrapingTaskId !== null;
+export function getAvailableScraperSocket(): TypedSocket | null {
+	for (const info of scrapers.values()) {
+		if (info.runningTasks.size < info.maxConcurrency) return info.socket;
+	}
+	return null;
+}
+
+export function getScraperSocket(scraperId?: string): TypedSocket | null {
+	if (scraperId) {
+		const info = scrapers.get(scraperId);
+		return info?.socket ?? null;
+	}
+	const first = scrapers.values().next();
+	return first.done ? null : first.value.socket;
+}
+
+export function getAllRunningTaskIds(): number[] {
+	const ids: number[] = [];
+	for (const info of scrapers.values()) {
+		for (const id of info.runningTasks) ids.push(id);
+	}
+	return ids;
+}
+
+export function getScraperIdForTask(taskId: number): string | null {
+	for (const [id, info] of scrapers.entries()) {
+		if (info.runningTasks.has(taskId)) return id;
+	}
+	return null;
 }
 
 export function getCurrentScrapingTaskId(): number | null {
-	return currentScrapingTaskId;
-}
-
-// ─── Public helpers ──────────────────────────────────────────
-
-export function getScraperSocket(): TypedSocket | null {
-	const first = scrapers.values().next();
-	return first.done ? null : first.value.socket;
+	for (const info of scrapers.values()) {
+		const first = info.runningTasks.values().next();
+		if (!first.done) return first.value;
+	}
+	return null;
 }
 
 export function getConnectedScrapers(): {
@@ -97,29 +127,29 @@ export function setupScraperSocket(server: SocketIOServer) {
 				{ id: socket.id, name: info?.name, source: info?.source, reason },
 				"Scraper disconnected",
 			);
+
+			const orphanedTasks = info ? Array.from(info.runningTasks) : [];
 			scrapers.delete(socket.id);
 
-			const orphanedTaskId = currentScrapingTaskId;
-			currentScrapingTaskId = null;
-
-			if (orphanedTaskId !== null) {
+			if (orphanedTasks.length > 0) {
 				log.info(
-					{ taskId: orphanedTaskId },
-					"Scraper disconnected with running task, waiting 10s before marking cancelled",
+					{ taskIds: orphanedTasks },
+					"Scraper disconnected with running tasks, waiting 10s before marking cancelled",
 				);
-				disconnectCancelTimer = setTimeout(() => {
-					disconnectCancelTimer = null;
-					const task = getScrapingTask(orphanedTaskId);
-					if (task && task.status === "pending") {
-						log.info(
-							{ taskId: orphanedTaskId },
-							"Task still pending after grace period, marking as cancelled",
-						);
-						const errorLogs = getLogLines(socket.id);
-						updateScrapingTask(orphanedTaskId, {
-							status: "cancelled",
-							errorLogs,
-						});
+				setTimeout(() => {
+					for (const taskId of orphanedTasks) {
+						const task = getScrapingTask(taskId);
+						if (task && task.status === "pending") {
+							log.info(
+								{ taskId },
+								"Task still pending after grace period, marking as cancelled",
+							);
+							const errorLogs = getLogLines(socket.id);
+							updateScrapingTask(taskId, {
+								status: "cancelled",
+								errorLogs,
+							});
+						}
 					}
 				}, 10_000);
 			}
@@ -140,9 +170,16 @@ export function setupScraperSocket(server: SocketIOServer) {
 				cities: parsed.data.cities,
 				name,
 				socket,
+				runningTasks: new Set(),
+				maxConcurrency: parsed.data.maxConcurrency ?? 1,
 			});
 			log.info(
-				{ name, source: parsed.data.source, cities: parsed.data.cities },
+				{
+					name,
+					source: parsed.data.source,
+					cities: parsed.data.cities,
+					maxConcurrency: parsed.data.maxConcurrency ?? 1,
+				},
 				"Scraper registered",
 			);
 			ack({ ok: true });
@@ -160,7 +197,8 @@ export function setupScraperSocket(server: SocketIOServer) {
 			const { id } = createScrapingTask(parsed.data.targetId, {
 				maxPages: parsed.data.maxPages,
 			});
-			currentScrapingTaskId = id;
+			const info = scrapers.get(socket.id);
+			if (info) info.runningTasks.add(id);
 			ack({ taskId: id });
 		});
 
@@ -201,7 +239,8 @@ export function setupScraperSocket(server: SocketIOServer) {
 				markRemovedListings(city, task.startedAt);
 			}
 
-			currentScrapingTaskId = null;
+			const info = scrapers.get(socket.id);
+			if (info) info.runningTasks.delete(taskId);
 			ack(result);
 		});
 
@@ -230,7 +269,7 @@ export function setupScraperSocket(server: SocketIOServer) {
 			const result = ingestListings(
 				parsed.data.city,
 				parsed.data.listings,
-				currentScrapingTaskId,
+				parsed.data.taskId ?? null,
 			);
 			ack(result);
 		});
@@ -244,7 +283,12 @@ export function setupScraperSocket(server: SocketIOServer) {
 				);
 				return;
 			}
-			pushLogLine(socket.id, parsed.data.line, parsed.data.ts);
+			pushLogLine(
+				socket.id,
+				parsed.data.line,
+				parsed.data.ts,
+				parsed.data.taskId,
+			);
 		});
 
 		socket.on(SocketEvents.SCRAPE_ERROR, (data, ack) => {
@@ -262,7 +306,8 @@ export function setupScraperSocket(server: SocketIOServer) {
 				errorMessage: parsed.data.errorMessage,
 				errorLogs,
 			});
-			currentScrapingTaskId = null;
+			const info = scrapers.get(socket.id);
+			if (info) info.runningTasks.delete(parsed.data.taskId);
 			ack({ ok: true });
 		});
 
@@ -281,11 +326,8 @@ export function setupScraperSocket(server: SocketIOServer) {
 				errorLogs,
 			});
 			log.info({ taskId: parsed.data.taskId }, "Task cancelled by scraper");
-			currentScrapingTaskId = null;
-			if (disconnectCancelTimer) {
-				clearTimeout(disconnectCancelTimer);
-				disconnectCancelTimer = null;
-			}
+			const info = scrapers.get(socket.id);
+			if (info) info.runningTasks.delete(parsed.data.taskId);
 			ack({ ok: true });
 		});
 	});

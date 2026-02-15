@@ -128,20 +128,25 @@ export interface ConversationDetail extends ConversationRow {
 	} | null;
 }
 
+interface ActiveTask {
+	id: number;
+	targetId: number;
+	targetName: string;
+	targetLocation: string;
+}
+
 export interface ScraperStatusResponse {
 	isRunning: boolean;
+	runningTaskCount?: number;
+	maxConcurrency?: number;
 	lastRunAt: string | null;
 	memoryMb?: {
 		rss: number;
 		heapUsed: number;
 		heapTotal: number;
 	};
-	currentTask: {
-		id: number;
-		targetId: number;
-		targetName: string;
-		targetLocation: string;
-	} | null;
+	currentTask: ActiveTask | null;
+	activeTasks?: ActiveTask[];
 	scrapers: {
 		id: string;
 		name: string;
@@ -227,6 +232,10 @@ class PanelApiClient {
 			targetId,
 			...opts,
 		});
+	}
+
+	cancelTask(taskId: number): Promise<{ ok: true } | { error: string }> {
+		return this.request("POST", "/api/scraper/cancel", { taskId });
 	}
 
 	getTargets(): Promise<TargetsResponse> {

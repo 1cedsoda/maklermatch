@@ -467,7 +467,7 @@ export async function filterByAnbieter(
 					log.warn("URL did not change after clicking anbieter filter");
 				}
 				await page.waitForLoadState("domcontentloaded");
-				log.info({ type, url: page.url() }, `Filtered to ${type} listings`);
+				log.info(`Filtered to ${type} listings: ${page.url()}`);
 
 				if (!isRetry) {
 					await humanScroll(page, Math.round(100 + Math.random() * 150));
@@ -565,7 +565,7 @@ export async function selectSorting(
 					log.warn("URL did not change after sorting selection");
 				}
 				await page.waitForLoadState("domcontentloaded");
-				log.info({ sorting, url: page.url() }, "Sorting applied");
+				log.info(`Sorting applied: ${page.url()}`);
 
 				if (!isRetry) {
 					await humanDelay(page, 800);
@@ -585,5 +585,5 @@ export async function waitForListings(page: Page) {
 	log.info("Waiting for listings table...");
 	await page.waitForSelector("#srchrslt-adtable", { timeout: 15000 });
 	await humanBrowse(page);
-	log.info("Listings loaded");
+	log.info(`Listings loaded: ${page.url()}`);
 }

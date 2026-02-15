@@ -75,81 +75,91 @@ export function ScraperPage() {
 
 			{status && scrapers.length > 0 && (
 				<div className="grid gap-4 md:grid-cols-2">
-					{scrapers.map((scraper) => (
-						<Card key={scraper.id}>
-							<CardHeader className="pb-3">
-								<div className="flex items-center justify-between">
-									<CardTitle className="flex items-center gap-2 text-base">
-										<Bot className="h-4 w-4" />
-										{scraper.name}
-									</CardTitle>
-									<Badge variant={status.isRunning ? "default" : "secondary"}>
-										{status.isRunning ? "Scraping" : "Idle"}
-									</Badge>
-								</div>
-								<p className="text-xs text-muted-foreground">
-									{scraper.source} &middot; {scraper.cities.join(", ")}
-								</p>
-							</CardHeader>
-							<CardContent className="space-y-4">
-								{/* Memory usage */}
-								{status.memoryMb && (
-									<div className="space-y-2">
-										<div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-											<MemoryStick className="h-3.5 w-3.5" />
-											Memory
-										</div>
-										<MemoryBar
-											label="Heap"
-											usedMb={status.memoryMb.heapUsed}
-											totalMb={status.memoryMb.heapTotal}
-										/>
-										<MemoryBar
-											label="RSS"
-											usedMb={status.memoryMb.rss}
-											totalMb={Math.max(status.memoryMb.rss, 512)}
-										/>
+					{scrapers.map((scraper) => {
+						const tasks =
+							status.activeTasks ??
+							(status.currentTask ? [status.currentTask] : []);
+						return (
+							<Card key={scraper.id}>
+								<CardHeader className="pb-3">
+									<div className="flex items-center justify-between">
+										<CardTitle className="flex items-center gap-2 text-base">
+											<Bot className="h-4 w-4" />
+											{scraper.name}
+										</CardTitle>
+										<Badge variant={tasks.length > 0 ? "default" : "secondary"}>
+											{tasks.length > 0
+												? `Scraping (${tasks.length}/${status.maxConcurrency ?? "?"})`
+												: "Idle"}
+										</Badge>
 									</div>
-								)}
-
-								{/* Active task */}
-								{status.currentTask && (
-									<div className="rounded-md border bg-muted/50 p-3 space-y-1">
-										<div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-											<Activity className="h-3.5 w-3.5" />
-											Active Task
-										</div>
-										<div className="text-sm">
-											<Link
-												to={`/targets/${status.currentTask.targetId}`}
-												className="text-primary font-medium underline-offset-4 hover:underline"
-											>
-												{status.currentTask.targetName}
-											</Link>
-											<span className="text-muted-foreground">
-												{" "}
-												&middot; {status.currentTask.targetLocation}
-											</span>
-										</div>
-										<Link
-											to={`/scraping-tasks/${status.currentTask.id}`}
-											className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
-										>
-											<Cpu className="h-3 w-3" />
-											Task #{status.currentTask.id}
-										</Link>
-									</div>
-								)}
-
-								{/* Last run */}
-								{!status.currentTask && status.lastRunAt && (
 									<p className="text-xs text-muted-foreground">
-										Last run: {new Date(status.lastRunAt).toLocaleString()}
+										{scraper.source} &middot; {scraper.cities.join(", ")}
 									</p>
-								)}
-							</CardContent>
-						</Card>
-					))}
+								</CardHeader>
+								<CardContent className="space-y-4">
+									{/* Memory usage */}
+									{status.memoryMb && (
+										<div className="space-y-2">
+											<div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+												<MemoryStick className="h-3.5 w-3.5" />
+												Memory
+											</div>
+											<MemoryBar
+												label="Heap"
+												usedMb={status.memoryMb.heapUsed}
+												totalMb={status.memoryMb.heapTotal}
+											/>
+											<MemoryBar
+												label="RSS"
+												usedMb={status.memoryMb.rss}
+												totalMb={Math.max(status.memoryMb.rss, 512)}
+											/>
+										</div>
+									)}
+
+									{/* Active tasks */}
+									{tasks.map((task) => (
+										<div
+											key={task.id}
+											className="rounded-md border bg-muted/50 p-3 space-y-1"
+										>
+											<div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+												<Activity className="h-3.5 w-3.5" />
+												Active Task
+											</div>
+											<div className="text-sm">
+												<Link
+													to={`/targets/${task.targetId}`}
+													className="text-primary font-medium underline-offset-4 hover:underline"
+												>
+													{task.targetName}
+												</Link>
+												<span className="text-muted-foreground">
+													{" "}
+													&middot; {task.targetLocation}
+												</span>
+											</div>
+											<Link
+												to={`/scraping-tasks/${task.id}`}
+												className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+											>
+												<Cpu className="h-3 w-3" />
+												Task #{task.id}
+											</Link>
+										</div>
+									))}
+
+									{/* Last run */}
+									{tasks.length === 0 && status.lastRunAt && (
+										<p className="text-xs text-muted-foreground">
+											Last run: {new Date(status.lastRunAt).toLocaleString()}
+										</p>
+									)}
+								</CardContent>
+							</Card>
+						);
+					})}
 				</div>
 			)}
 		</div>

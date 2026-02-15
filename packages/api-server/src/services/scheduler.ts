@@ -1,7 +1,10 @@
 import { SocketEvents } from "@scraper/api-types";
 import { logger } from "../logger";
 import { getActiveTargets, targetToKleinanzeigenSearch } from "./targets";
-import { getScraperSocket, isScraperRunning } from "../socket/scraper";
+import {
+	getAvailableScraperSocket,
+	hasAvailableScraper,
+} from "../socket/scraper";
 import type { searchTargets } from "../db/schema";
 
 const log = logger.child({ module: "scheduler" });
@@ -44,15 +47,15 @@ function randomInterval(target: Target): number {
 }
 
 async function triggerTarget(target: Target): Promise<boolean> {
-	if (isScraperRunning()) {
+	if (!hasAvailableScraper()) {
 		log.info(
 			{ targetId: target.id, name: target.name },
-			"Scraper busy, delaying target",
+			"All scrapers at capacity, delaying target",
 		);
 		return false;
 	}
 
-	const socket = getScraperSocket();
+	const socket = getAvailableScraperSocket();
 	if (!socket) {
 		log.warn(
 			{ targetId: target.id, name: target.name },

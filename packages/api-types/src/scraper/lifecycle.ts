@@ -8,6 +8,7 @@ import { ingestListingSchema } from "./ingest";
 export const registerPayloadSchema = z.object({
 	source: z.string(),
 	cities: z.array(z.string()),
+	maxConcurrency: z.number().int().positive().optional(),
 });
 
 export type RegisterPayload = z.infer<typeof registerPayloadSchema>;
@@ -106,6 +107,7 @@ export type ListingCheckAck = z.infer<typeof listingCheckAckSchema>;
 export const ingestListingsPayloadSchema = z.object({
 	city: z.string(),
 	listings: z.array(ingestListingSchema),
+	taskId: z.number().optional(),
 });
 
 export type IngestListingsPayload = z.infer<typeof ingestListingsPayloadSchema>;
@@ -124,6 +126,7 @@ export type IngestListingsAck = z.infer<typeof ingestListingsAckSchema>;
 export const logLinePayloadSchema = z.object({
 	line: z.string(),
 	ts: z.number(),
+	taskId: z.number().optional(),
 });
 
 export type LogLinePayload = z.infer<typeof logLinePayloadSchema>;

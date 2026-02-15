@@ -26,6 +26,7 @@ export const SocketEvents = {
 	INGEST_LISTINGS: "listing:ingest",
 	SCRAPER_STATUS: "scraper:status",
 	SCRAPER_TRIGGER: "scraper:trigger",
+	SCRAPER_CANCEL_TASK: "scraper:cancel-task",
 	MESSAGE_SEND: "message:send",
 	LOG_LINE: "log:line",
 } as const;
@@ -64,6 +65,9 @@ export interface ScraperToServerEvents {
 
 export interface ScraperStatusAck {
 	isRunning: boolean;
+	runningTaskCount: number;
+	maxConcurrency: number;
+	activeTasks: number[];
 	lastRunAt: string | null;
 	memoryMb?: {
 		rss: number;
@@ -78,6 +82,10 @@ export interface ServerToScraperEvents {
 	) => void;
 	[SocketEvents.SCRAPER_TRIGGER]: (
 		data: ScraperTriggerPayload,
+		ack: (response: { ok: true } | { error: string }) => void,
+	) => void;
+	[SocketEvents.SCRAPER_CANCEL_TASK]: (
+		data: { taskId: number },
 		ack: (response: { ok: true } | { error: string }) => void,
 	) => void;
 	[SocketEvents.MESSAGE_SEND]: (

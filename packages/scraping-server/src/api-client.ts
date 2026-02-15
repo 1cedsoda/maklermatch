@@ -76,11 +76,12 @@ export class ApiClient {
 	async ingestListings(
 		city: string,
 		listings: IngestListing[],
+		taskId?: number,
 	): Promise<IngestListingsAck> {
 		await this.waitForConnection(RECONNECT_TIMEOUT);
 		return this.socket
 			.timeout(30000)
-			.emitWithAck(SocketEvents.INGEST_LISTINGS, { city, listings });
+			.emitWithAck(SocketEvents.INGEST_LISTINGS, { city, listings, taskId });
 	}
 
 	async scrapeError(taskId: number, errorMessage: string): Promise<void> {

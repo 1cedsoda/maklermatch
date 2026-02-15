@@ -2,10 +2,7 @@ import { Router } from "express";
 import { eq, desc } from "drizzle-orm";
 import { db } from "../db";
 import { scrapingTasks, searchTargets } from "../db/schema";
-import {
-	getCurrentScrapingTaskId,
-	getConnectedScrapers,
-} from "../socket/scraper";
+import { getScraperIdForTask } from "../socket/scraper";
 
 const router = Router();
 
@@ -81,14 +78,8 @@ router.get("/:id", (req, res) => {
 		return;
 	}
 
-	let scraperId: string | null = null;
-	const currentTaskId = getCurrentScrapingTaskId();
-	if (task.status === "pending" && currentTaskId === task.id) {
-		const scrapers = getConnectedScrapers();
-		if (scrapers.length > 0) {
-			scraperId = scrapers[0].id;
-		}
-	}
+	const scraperId =
+		task.status === "pending" ? getScraperIdForTask(task.id) : null;
 
 	res.json({ task, scraperId });
 });

@@ -4,14 +4,16 @@ import { api } from "@/lib/api";
 import type { ScrapingTaskDetailResponse, LogEntry } from "@scraper/api-types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { LogViewer } from "@/components/log-viewer";
-import { Cpu, ArrowLeft } from "lucide-react";
+import { Cpu, ArrowLeft, XCircle } from "lucide-react";
 
 export function ScrapingTaskDetailPage() {
 	const { id } = useParams<{ id: string }>();
 	const [detail, setDetail] = useState<ScrapingTaskDetailResponse | null>(null);
 	const [liveLines, setLiveLines] = useState<LogEntry[]>([]);
 	const [error, setError] = useState("");
+	const [cancelling, setCancelling] = useState(false);
 	const logPollRef = useRef<ReturnType<typeof setInterval>>(null);
 	const taskPollRef = useRef<ReturnType<typeof setInterval>>(null);
 
@@ -83,6 +85,17 @@ export function ScrapingTaskDetailPage() {
 	const isRunning = task.status === "pending" && scraperId !== null;
 	const isError = task.status === "error";
 
+	const handleCancel = async () => {
+		setCancelling(true);
+		try {
+			await api.cancelTask(task.id);
+		} catch {
+			// Task may have already finished
+		} finally {
+			setCancelling(false);
+		}
+	};
+
 	const logLines = isRunning
 		? liveLines
 		: isError
@@ -106,7 +119,20 @@ export function ScrapingTaskDetailPage() {
 							<Cpu className="h-5 w-5" />
 							Scraping Task #{task.id}
 						</CardTitle>
-						<StatusBadge status={task.status} />
+						<div className="flex items-center gap-2">
+							{isRunning && (
+								<Button
+									variant="outline"
+									size="sm"
+									disabled={cancelling}
+									onClick={handleCancel}
+								>
+									<XCircle className="h-3.5 w-3.5 mr-1.5" />
+									{cancelling ? "Cancelling..." : "Cancel"}
+								</Button>
+							)}
+							<StatusBadge status={task.status} />
+						</div>
 					</div>
 				</CardHeader>
 				<CardContent className="space-y-2 text-sm">

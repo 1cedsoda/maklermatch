@@ -111,8 +111,12 @@ export function TargetsPage() {
 		}
 	};
 
-	const runningTargetId = scraperStatus?.currentTask?.targetId ?? null;
-	const runningTaskId = scraperStatus?.currentTask?.id ?? null;
+	const runningTargetIds = new Set(
+		(
+			scraperStatus?.activeTasks ??
+			(scraperStatus?.currentTask ? [scraperStatus.currentTask] : [])
+		).map((t) => t.targetId),
+	);
 
 	return (
 		<div className="space-y-4">
@@ -151,7 +155,7 @@ export function TargetsPage() {
 				</TableHeader>
 				<TableBody>
 					{targets.map((t) => {
-						const isRunning = runningTargetId === t.id;
+						const isRunning = runningTargetIds.has(t.id);
 						return (
 							<TableRow key={t.id}>
 								<TableCell className="font-medium">

@@ -2,7 +2,11 @@ import { io } from "socket.io-client";
 import { SCRAPER_SECRET, SocketEvents } from "@scraper/api-types";
 import { setLogLineHandler as setKleinanzeigenLogHandler } from "@scraper/scraping-kleinanzeigen";
 import { ApiClient } from "./api-client";
-import { setupScraperHandlers, getCurrentTaskId } from "./socket-handlers";
+import {
+	setupScraperHandlers,
+	getActiveTaskIds,
+	getMaxConcurrency,
+} from "./socket-handlers";
 import { logger, setLogLineHandler } from "./logger";
 
 const log = logger.child({ module: "main" });
@@ -34,6 +38,7 @@ socket.on("connect", () => {
 	socket.emitWithAck(SocketEvents.REGISTER, {
 		source: "kleinanzeigen",
 		cities: [],
+		maxConcurrency: getMaxConcurrency(),
 	});
 });
 
@@ -54,13 +59,13 @@ log.info(
 
 const shutdown = async (signal: string) => {
 	log.info({ signal }, "Received shutdown signal");
-	const taskId = getCurrentTaskId();
-	if (taskId !== null) {
+	const taskIds = getActiveTaskIds();
+	for (const taskId of taskIds) {
 		log.info({ taskId }, "Cancelling running task before exit");
 		try {
 			await apiClient.scrapeCancel(taskId);
 		} catch (err) {
-			log.warn({ err }, "Failed to send cancel event");
+			log.warn({ err, taskId }, "Failed to send cancel event");
 		}
 	}
 	socket.disconnect();
