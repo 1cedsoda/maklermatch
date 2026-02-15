@@ -6,6 +6,7 @@
 	"types": "src/index.ts",
 	"dependencies": {
 		"@ai-sdk/anthropic": "^3.0.44",
+		"@ai-sdk/openai-compatible": "^2.0.30",
 		"ai": "^6.0.85"
 	},
 	"devDependencies": {
