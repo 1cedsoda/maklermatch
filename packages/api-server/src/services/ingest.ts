@@ -312,122 +312,128 @@ export function ingestListings(
 	let updatedCount = 0;
 	let versionCount = 0;
 	let detailSnapshotCount = 0;
+	let errorCount = 0;
 
 	for (const item of items) {
-		db.transaction((tx) => {
-			const existing = tx
-				.select()
-				.from(listings)
-				.where(eq(listings.id, item.id))
-				.get();
-
-			if (existing) {
-				tx.update(listings)
-					.set({
-						url: item.url,
-						status: "active",
-						lastSeen: now,
-						...(item.detailPage ? { detailPageScrapedAt: now } : {}),
-					})
-					.where(eq(listings.id, item.id))
-					.run();
-
-				// Abstract version chain
-				const latestAbstract = tx
+		try {
+			db.transaction((tx) => {
+				const existing = tx
 					.select()
-					.from(listingAbstractSnapshots)
-					.where(eq(listingAbstractSnapshots.listingId, item.id))
-					.orderBy(desc(listingAbstractSnapshots.id))
-					.limit(1)
+					.from(listings)
+					.where(eq(listings.id, item.id))
 					.get();
 
-				if (!latestAbstract || hasAbstractChanged(item, latestAbstract)) {
-					insertAbstractVersion(
-						tx,
-						item.id,
-						item,
-						now,
-						latestAbstract?.id ?? null,
-						scrapingTaskId,
-					);
-					versionCount++;
-				}
+				if (existing) {
+					tx.update(listings)
+						.set({
+							url: item.url,
+							status: "active",
+							lastSeen: now,
+							...(item.detailPage ? { detailPageScrapedAt: now } : {}),
+						})
+						.where(eq(listings.id, item.id))
+						.run();
 
-				// Detail snapshot chain
-				if (item.detailPage) {
-					const sellerId = upsertSeller(
-						tx,
-						item.detailPage.seller,
-						now,
-						scrapingTaskId,
-					);
-
-					const latestDetail = tx
+					// Abstract version chain
+					const latestAbstract = tx
 						.select()
-						.from(listingDetailSnapshots)
-						.where(eq(listingDetailSnapshots.listingId, item.id))
-						.orderBy(desc(listingDetailSnapshots.id))
+						.from(listingAbstractSnapshots)
+						.where(eq(listingAbstractSnapshots.listingId, item.id))
+						.orderBy(desc(listingAbstractSnapshots.id))
 						.limit(1)
 						.get();
 
-					const sellerChanged = sellerId !== (latestDetail?.sellerId ?? null);
-					if (
-						!latestDetail ||
-						hasDetailChanged(item.detailPage, latestDetail) ||
-						sellerChanged
-					) {
+					if (!latestAbstract || hasAbstractChanged(item, latestAbstract)) {
+						insertAbstractVersion(
+							tx,
+							item.id,
+							item,
+							now,
+							latestAbstract?.id ?? null,
+							scrapingTaskId,
+						);
+						versionCount++;
+					}
+
+					// Detail snapshot chain
+					if (item.detailPage) {
+						const sellerId = upsertSeller(
+							tx,
+							item.detailPage.seller,
+							now,
+							scrapingTaskId,
+						);
+
+						const latestDetail = tx
+							.select()
+							.from(listingDetailSnapshots)
+							.where(eq(listingDetailSnapshots.listingId, item.id))
+							.orderBy(desc(listingDetailSnapshots.id))
+							.limit(1)
+							.get();
+
+						const sellerChanged = sellerId !== (latestDetail?.sellerId ?? null);
+						if (
+							!latestDetail ||
+							hasDetailChanged(item.detailPage, latestDetail) ||
+							sellerChanged
+						) {
+							insertDetailSnapshot(
+								tx,
+								item.id,
+								item.detailPage,
+								sellerId,
+								now,
+								latestDetail?.id ?? null,
+								scrapingTaskId,
+							);
+							detailSnapshotCount++;
+						}
+					}
+
+					updatedCount++;
+				} else {
+					tx.insert(listings)
+						.values({
+							id: item.id,
+							city,
+							url: item.url,
+							status: "active",
+							firstSeen: now,
+							lastSeen: now,
+							detailPageScrapedAt: item.detailPage ? now : null,
+						})
+						.run();
+
+					insertAbstractVersion(tx, item.id, item, now, null, scrapingTaskId);
+					versionCount++;
+
+					if (item.detailPage) {
+						const sellerId = upsertSeller(
+							tx,
+							item.detailPage.seller,
+							now,
+							scrapingTaskId,
+						);
 						insertDetailSnapshot(
 							tx,
 							item.id,
 							item.detailPage,
 							sellerId,
 							now,
-							latestDetail?.id ?? null,
+							null,
 							scrapingTaskId,
 						);
 						detailSnapshotCount++;
 					}
+
+					newCount++;
 				}
-
-				updatedCount++;
-			} else {
-				tx.insert(listings)
-					.values({
-						id: item.id,
-						city,
-						url: item.url,
-						status: "active",
-						firstSeen: now,
-						lastSeen: now,
-						detailPageScrapedAt: item.detailPage ? now : null,
-					})
-					.run();
-
-				insertAbstractVersion(tx, item.id, item, now, null, scrapingTaskId);
-				versionCount++;
-
-				if (item.detailPage) {
-					const sellerId = upsertSeller(
-						tx,
-						item.detailPage.seller,
-						now,
-						scrapingTaskId,
-					);
-					insertDetailSnapshot(
-						tx,
-						item.id,
-						item.detailPage,
-						sellerId,
-						now,
-						null,
-						scrapingTaskId,
-					);
-					detailSnapshotCount++;
-				}
-
-				newCount++;
-			}
-		});
+			});
+		} catch (err) {
+			log.error({ listingId: item.id, err }, "Failed to ingest listing");
+			errorCount++;
+		}
 	}
 
 	log.info(
@@ -436,6 +442,7 @@ export function ingestListings(
 			updated: updatedCount,
 			versions: versionCount,
 			detailSnapshots: detailSnapshotCount,
+			errors: errorCount,
 		},
 		"Ingested listings",
 	);

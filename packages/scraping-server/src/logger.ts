@@ -2,6 +2,8 @@ import pino from "pino";
 import pinoPretty from "pino-pretty";
 import { Writable } from "node:stream";
 
+const isDev = process.env.NODE_ENV !== "production";
+
 let onLogLine: ((line: string, ts: number) => void) | null = null;
 
 export function setLogLineHandler(handler: (line: string, ts: number) => void) {
@@ -25,11 +27,13 @@ const logStream = new Writable({
 	},
 });
 
-export const logger = pino(
-	pinoPretty({
-		colorize: true,
-		translateTime: "HH:MM:ss.l",
-		ignore: "pid,hostname",
-		destination: logStream,
-	}),
-);
+export const logger = isDev
+	? pino(
+			pinoPretty({
+				colorize: true,
+				translateTime: "HH:MM:ss.l",
+				ignore: "pid,hostname",
+				destination: logStream,
+			}),
+		)
+	: pino(logStream);

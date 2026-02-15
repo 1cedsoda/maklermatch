@@ -128,6 +128,10 @@ export function setupScraperSocket(server: SocketIOServer) {
 		socket.on(SocketEvents.REGISTER, (data, ack) => {
 			const parsed = registerPayloadSchema.safeParse(data);
 			if (!parsed.success) {
+				log.warn(
+					{ event: SocketEvents.REGISTER, errors: parsed.error.issues },
+					"Invalid socket payload",
+				);
 				return;
 			}
 			const name = generateScraperName();
@@ -147,6 +151,10 @@ export function setupScraperSocket(server: SocketIOServer) {
 		socket.on(SocketEvents.SCRAPE_START, (data, ack) => {
 			const parsed = scrapeStartPayloadSchema.safeParse(data);
 			if (!parsed.success) {
+				log.warn(
+					{ event: SocketEvents.SCRAPE_START, errors: parsed.error.issues },
+					"Invalid socket payload",
+				);
 				return;
 			}
 			const { id } = createScrapingTask(parsed.data.targetId, {
@@ -159,6 +167,10 @@ export function setupScraperSocket(server: SocketIOServer) {
 		socket.on(SocketEvents.SCRAPE_RESULT, (data, ack) => {
 			const parsed = scrapeResultPayloadSchema.safeParse(data);
 			if (!parsed.success) {
+				log.warn(
+					{ event: SocketEvents.SCRAPE_RESULT, errors: parsed.error.issues },
+					"Invalid socket payload",
+				);
 				return;
 			}
 			const {
@@ -196,6 +208,10 @@ export function setupScraperSocket(server: SocketIOServer) {
 		socket.on(SocketEvents.LISTING_CHECK, (data, ack) => {
 			const parsed = listingCheckPayloadSchema.safeParse(data);
 			if (!parsed.success) {
+				log.warn(
+					{ event: SocketEvents.LISTING_CHECK, errors: parsed.error.issues },
+					"Invalid socket payload",
+				);
 				return;
 			}
 			const results = checkListings(parsed.data.listings);
@@ -205,6 +221,10 @@ export function setupScraperSocket(server: SocketIOServer) {
 		socket.on(SocketEvents.INGEST_LISTINGS, (data, ack) => {
 			const parsed = ingestListingsPayloadSchema.safeParse(data);
 			if (!parsed.success) {
+				log.warn(
+					{ event: SocketEvents.INGEST_LISTINGS, errors: parsed.error.issues },
+					"Invalid socket payload",
+				);
 				return;
 			}
 			const result = ingestListings(
@@ -217,13 +237,23 @@ export function setupScraperSocket(server: SocketIOServer) {
 
 		socket.on(SocketEvents.LOG_LINE, (data) => {
 			const parsed = logLinePayloadSchema.safeParse(data);
-			if (!parsed.success) return;
+			if (!parsed.success) {
+				log.warn(
+					{ event: SocketEvents.LOG_LINE, errors: parsed.error.issues },
+					"Invalid socket payload",
+				);
+				return;
+			}
 			pushLogLine(socket.id, parsed.data.line, parsed.data.ts);
 		});
 
 		socket.on(SocketEvents.SCRAPE_ERROR, (data, ack) => {
 			const parsed = scrapeErrorPayloadSchema.safeParse(data);
 			if (!parsed.success) {
+				log.warn(
+					{ event: SocketEvents.SCRAPE_ERROR, errors: parsed.error.issues },
+					"Invalid socket payload",
+				);
 				return;
 			}
 			const errorLogs = getLogLines(socket.id);
@@ -239,6 +269,10 @@ export function setupScraperSocket(server: SocketIOServer) {
 		socket.on(SocketEvents.SCRAPE_CANCEL, (data, ack) => {
 			const parsed = scrapeCancelPayloadSchema.safeParse(data);
 			if (!parsed.success) {
+				log.warn(
+					{ event: SocketEvents.SCRAPE_CANCEL, errors: parsed.error.issues },
+					"Invalid socket payload",
+				);
 				return;
 			}
 			const errorLogs = getLogLines(socket.id);

@@ -17,8 +17,8 @@ COPY packages/scraping-core/package.json ./packages/scraping-core/
 COPY packages/scraping-kleinanzeigen/package.json ./packages/scraping-kleinanzeigen/
 COPY packages/scraping-server/package.json ./packages/scraping-server/
 
-# Install all workspace dependencies
-RUN bun install --frozen-lockfile --ignore-scripts
+# Install production dependencies only
+RUN bun install --frozen-lockfile --ignore-scripts --production
 
 # ============================================================
 # Stage 2: Runtime
@@ -27,21 +27,31 @@ FROM oven/bun:1-debian AS runtime
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	dumb-init \
+	curl \
 	&& rm -rf /var/lib/apt/lists/*
+
+# Create non-root user before COPY so --chown can reference it
+RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser
 
 WORKDIR /app
 
-# Copy installed node_modules from install stage
-COPY --from=install /app/node_modules ./node_modules
-COPY --from=install /app/packages/api-types/node_modules ./packages/api-types/node_modules
-COPY --from=install /app/packages/api-server/node_modules ./packages/api-server/node_modules
+# node_modules (changes only when dependencies change)
+COPY --from=install --chown=appuser:appuser /app/node_modules ./node_modules
+COPY --from=install --chown=appuser:appuser /app/packages/api-types/node_modules ./packages/api-types/node_modules
+COPY --from=install --chown=appuser:appuser /app/packages/api-server/node_modules ./packages/api-server/node_modules
 
-# Copy all workspace source files
-COPY package.json bun.lock tsconfig.json ./
-COPY packages/api-types/ ./packages/api-types/
-COPY packages/api-server/ ./packages/api-server/
+# Workspace root config (changes rarely)
+COPY --chown=appuser:appuser package.json bun.lock tsconfig.json ./
 
-# Create data directory for SQLite
+# Dependency packages (change less often than main service)
+COPY --chown=appuser:appuser packages/api-types/ ./packages/api-types/
+
+# Main service source (changes most often)
+COPY --chown=appuser:appuser packages/api-server/ ./packages/api-server/
+
+USER appuser
+
+# Create data directory for SQLite (appuser owns parent via --chown)
 RUN mkdir -p /app/packages/api-server/data
 
 ENV NODE_ENV=production

@@ -9,6 +9,7 @@ const log = logger.child({ module: "scheduler" });
 const WAKEFULNESS_START = 7;
 const WAKEFULNESS_END = 23;
 const BUSY_RETRY_MS = 2 * 60_000 + Math.random() * 3 * 60_000; // 2-5 min
+const TRIGGER_TIMEOUT_MS = 30_000;
 
 type Target = typeof searchTargets.$inferSelect;
 
@@ -152,7 +153,18 @@ function scheduleNextTick(): void {
 
 		try {
 			const st = scheduledTargets.shift()!;
-			const triggered = await triggerTarget(st.target);
+			const triggered = await Promise.race([
+				triggerTarget(st.target),
+				new Promise<boolean>((_, reject) =>
+					setTimeout(
+						() => reject(new Error("Trigger timeout")),
+						TRIGGER_TIMEOUT_MS,
+					),
+				),
+			]).catch((err) => {
+				log.error({ targetId: st.target.id, err }, "Target trigger timed out");
+				return false;
+			});
 
 			const freshActive = getActiveTargets();
 			const stillActive = freshActive.find((t) => t.id === st.target.id);

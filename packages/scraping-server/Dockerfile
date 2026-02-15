@@ -17,8 +17,8 @@ COPY packages/scraping-core/package.json ./packages/scraping-core/
 COPY packages/scraping-kleinanzeigen/package.json ./packages/scraping-kleinanzeigen/
 COPY packages/scraping-server/package.json ./packages/scraping-server/
 
-# Install all workspace dependencies
-RUN bun install --frozen-lockfile --ignore-scripts
+# Install production dependencies only
+RUN bun install --frozen-lockfile --ignore-scripts --production
 
 # Install Chromium browser for patchright
 RUN bunx patchright install chromium
@@ -52,31 +52,41 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	dumb-init \
 	&& rm -rf /var/lib/apt/lists/*
 
+# Create non-root user before COPY so --chown can reference it
+RUN groupadd -r appuser && useradd -r -g appuser -m -d /home/appuser appuser
+
 WORKDIR /app
 
-# Copy installed node_modules from install stage
-COPY --from=install /app/node_modules ./node_modules
-COPY --from=install /app/packages/api-types/node_modules ./packages/api-types/node_modules
-COPY --from=install /app/packages/humanize/node_modules ./packages/humanize/node_modules
-COPY --from=install /app/packages/scraping-kleinanzeigen/node_modules ./packages/scraping-kleinanzeigen/node_modules
-COPY --from=install /app/packages/scraping-core/node_modules ./packages/scraping-core/node_modules
-COPY --from=install /app/packages/scraping-server/node_modules ./packages/scraping-server/node_modules
+# Chromium binary (largest blob, changes only on patchright version bump)
+COPY --from=install --chown=appuser:appuser /root/.cache/ms-playwright /home/appuser/.cache/ms-playwright
 
-# Copy Chromium browser from install stage
-COPY --from=install /root/.cache/ms-playwright /root/.cache/ms-playwright
+# node_modules (changes only when dependencies change)
+COPY --from=install --chown=appuser:appuser /app/node_modules ./node_modules
+COPY --from=install --chown=appuser:appuser /app/packages/api-types/node_modules ./packages/api-types/node_modules
+COPY --from=install --chown=appuser:appuser /app/packages/humanize/node_modules ./packages/humanize/node_modules
+COPY --from=install --chown=appuser:appuser /app/packages/scraping-kleinanzeigen/node_modules ./packages/scraping-kleinanzeigen/node_modules
+COPY --from=install --chown=appuser:appuser /app/packages/scraping-core/node_modules ./packages/scraping-core/node_modules
+COPY --from=install --chown=appuser:appuser /app/packages/scraping-server/node_modules ./packages/scraping-server/node_modules
 
-# Copy all workspace source files
-COPY package.json bun.lock tsconfig.json ./
-COPY packages/api-types/ ./packages/api-types/
-COPY packages/humanize/ ./packages/humanize/
-COPY packages/scraping-kleinanzeigen/ ./packages/scraping-kleinanzeigen/
-COPY packages/scraping-core/ ./packages/scraping-core/
-COPY packages/scraping-server/ ./packages/scraping-server/
+# Workspace root config (changes rarely)
+COPY --chown=appuser:appuser package.json bun.lock tsconfig.json ./
 
-# Create data directory for HTML pages
+# Dependency packages (change less often than main service)
+COPY --chown=appuser:appuser packages/api-types/ ./packages/api-types/
+COPY --chown=appuser:appuser packages/humanize/ ./packages/humanize/
+COPY --chown=appuser:appuser packages/scraping-core/ ./packages/scraping-core/
+COPY --chown=appuser:appuser packages/scraping-kleinanzeigen/ ./packages/scraping-kleinanzeigen/
+
+# Main service source (changes most often)
+COPY --chown=appuser:appuser packages/scraping-server/ ./packages/scraping-server/
+
+USER appuser
+
+# Create data directory for HTML pages (appuser owns parent via --chown)
 RUN mkdir -p /app/packages/scraping-server/data
 
 ENV NODE_ENV=production
+ENV HOME=/home/appuser
 
 WORKDIR /app/packages/scraping-server
 

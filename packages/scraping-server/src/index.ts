@@ -7,6 +7,11 @@ import { logger, setLogLineHandler } from "./logger";
 
 const log = logger.child({ module: "main" });
 
+if (process.env.NODE_ENV === "production" && !process.env.API_SERVER_URL) {
+	log.fatal("API_SERVER_URL must be set in production");
+	process.exit(1);
+}
+
 const API_SERVER_URL = process.env.API_SERVER_URL || "http://localhost:3001";
 
 const socket = io(API_SERVER_URL, {
