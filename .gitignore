@@ -3,10 +3,7 @@ dist/
 .DS_Store
 html/
 **/data/
-!deployment/local/data/
 deployment/local/data/*
-!deployment/local/data/.gitkeep
-!deployment/local/data/scraper.db
 *.db
 *.db-shm
 *.db-wal
