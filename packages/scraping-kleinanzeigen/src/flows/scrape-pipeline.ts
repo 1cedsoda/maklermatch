@@ -63,6 +63,7 @@ export async function scrapeListingPages(
 		const locationResult = await setLocation(
 			kleinanzeigenPage,
 			options.location,
+			{ verify: false },
 		);
 		if (!locationResult.ok) {
 			return { ok: false, error: locationResult.error };

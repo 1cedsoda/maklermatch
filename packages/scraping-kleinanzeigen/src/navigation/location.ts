@@ -15,6 +15,10 @@ export async function setLocation(
 	options?: NavigationOptions,
 ): Promise<Result<void, Error>> {
 	const retries = options?.retries ?? DEFAULT_RETRIES;
+	const verify = options?.verify ?? true;
+	if (!verify) {
+		log.warn("URL verification is disabled for setLocation");
+	}
 
 	return withRetry(
 		async () => {
@@ -109,6 +113,7 @@ export async function setLocation(
 				await page.waitForLoadState("domcontentloaded");
 				log.info(`Location set via autocomplete: ${page.url()}`);
 
+				if (!verify) return Result.ok();
 				return validateLocationUrl(page.url());
 			} catch (e) {
 				return Result.error(e instanceof Error ? e : new Error(String(e)));

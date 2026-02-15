@@ -203,7 +203,9 @@ async function main() {
 		await dismissLoginOverlay(kleinanzeigenPage);
 		const categoryInfo = getCategoryById(search.category)!;
 		(await navigateToCategory(kleinanzeigenPage, categoryInfo)).getOrThrow();
-		(await setLocation(kleinanzeigenPage, city)).getOrThrow();
+		(
+			await setLocation(kleinanzeigenPage, city, { verify: false })
+		).getOrThrow();
 		if (search.isPrivate) {
 			(await filterPrivateListings(kleinanzeigenPage)).getOrThrow();
 		}

@@ -239,7 +239,9 @@ export async function executeScrapePass(
 		await dismissCookieBanner(kleinanzeigenPage);
 		await dismissLoginOverlay(kleinanzeigenPage);
 		(await navigateToCategory(kleinanzeigenPage, categoryInfo)).getOrThrow();
-		(await setLocation(kleinanzeigenPage, city)).getOrThrow();
+		(
+			await setLocation(kleinanzeigenPage, city, { verify: false })
+		).getOrThrow();
 		if (search.isPrivate) {
 			(await filterPrivateListings(kleinanzeigenPage)).getOrThrow();
 		}

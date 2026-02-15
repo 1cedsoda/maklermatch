@@ -8,6 +8,8 @@ export const DEFAULT_RETRIES = 3;
 export interface NavigationOptions {
 	/** Total number of attempts (default: 3). */
 	retries?: number;
+	/** Whether to verify the result URL after navigation (default: true). */
+	verify?: boolean;
 }
 
 export async function withRetry(

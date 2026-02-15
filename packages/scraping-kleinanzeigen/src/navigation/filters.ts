@@ -27,6 +27,10 @@ export async function filterByAnbieter(
 	options?: NavigationOptions,
 ): Promise<Result<void, Error>> {
 	const retries = options?.retries ?? DEFAULT_RETRIES;
+	const verify = options?.verify ?? true;
+	if (!verify) {
+		log.warn("URL verification is disabled for filterByAnbieter");
+	}
 
 	return withRetry(
 		async (attempt) => {
@@ -75,6 +79,7 @@ export async function filterByAnbieter(
 					await humanDelay(page, 800);
 				}
 
+				if (!verify) return Result.ok();
 				return validateAnbieterUrl(page.url(), type);
 			} catch (e) {
 				return Result.error(e instanceof Error ? e : new Error(String(e)));
@@ -98,6 +103,10 @@ export async function selectSorting(
 	options?: NavigationOptions,
 ): Promise<Result<void, Error>> {
 	const retries = options?.retries ?? DEFAULT_RETRIES;
+	const verify = options?.verify ?? true;
+	if (!verify) {
+		log.warn("URL verification is disabled for selectSorting");
+	}
 
 	return withRetry(
 		async (attempt) => {
@@ -130,6 +139,7 @@ export async function selectSorting(
 						{ sorting },
 						"Sorting already set (default), validating URL...",
 					);
+					if (!verify) return Result.ok();
 					return validateSortingUrl(page.url(), sorting, true);
 				}
 
@@ -172,6 +182,7 @@ export async function selectSorting(
 					await humanDelay(page, 800);
 				}
 
+				if (!verify) return Result.ok();
 				return validateSortingUrl(page.url(), sorting, false);
 			} catch (e) {
 				return Result.error(e instanceof Error ? e : new Error(String(e)));

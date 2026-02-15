@@ -15,6 +15,10 @@ export async function navigateToCategory(
 	options?: NavigationOptions,
 ): Promise<Result<void, Error>> {
 	const retries = options?.retries ?? DEFAULT_RETRIES;
+	const verify = options?.verify ?? true;
+	if (!verify) {
+		log.warn("URL verification is disabled for navigateToCategory");
+	}
 
 	return withRetry(
 		async (attempt) => {
@@ -58,6 +62,7 @@ export async function navigateToCategory(
 					await humanDelay(page, 1200);
 				}
 
+				if (!verify) return Result.ok();
 				return validateCategoryUrl(page.url());
 			} catch (e) {
 				return Result.error(e instanceof Error ? e : new Error(String(e)));
