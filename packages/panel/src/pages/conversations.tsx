@@ -22,22 +22,22 @@ const STATUS_LABELS: Record<
 		variant: "default" | "secondary" | "destructive" | "outline";
 	}
 > = {
-	active: { label: "Aktiv", variant: "default" },
-	reply_received: { label: "Antwort", variant: "secondary" },
-	stopped: { label: "Gestoppt", variant: "destructive" },
-	done: { label: "Fertig", variant: "outline" },
+	active: { label: "Active", variant: "default" },
+	reply_received: { label: "Reply", variant: "secondary" },
+	stopped: { label: "Stopped", variant: "destructive" },
+	done: { label: "Done", variant: "outline" },
 };
 
 function formatRelativeTime(dateStr: string | null): string {
 	if (!dateStr) return "";
 	const diff = Date.now() - new Date(dateStr).getTime();
 	const minutes = Math.floor(diff / 60000);
-	if (minutes < 1) return "gerade eben";
-	if (minutes < 60) return `vor ${minutes} Min.`;
+	if (minutes < 1) return "just now";
+	if (minutes < 60) return `${minutes} min ago`;
 	const hours = Math.floor(minutes / 60);
-	if (hours < 24) return `vor ${hours} Std.`;
+	if (hours < 24) return `${hours} hr ago`;
 	const days = Math.floor(hours / 24);
-	return `vor ${days} T.`;
+	return `${days} d ago`;
 }
 
 function dbMessagesToUIMessages(
@@ -210,7 +210,7 @@ export function ConversationsPage() {
 			<Card className="flex w-80 shrink-0 flex-col gap-0 overflow-hidden py-0">
 				<div className="flex items-center gap-2 border-b px-4 py-3">
 					<MessageSquare className="size-4 text-muted-foreground" />
-					<span className="text-sm font-semibold">Konversationen</span>
+					<span className="text-sm font-semibold">Conversations</span>
 					<span className="ml-auto text-xs text-muted-foreground">
 						{conversations.length}
 					</span>
@@ -223,7 +223,7 @@ export function ConversationsPage() {
 						</div>
 					) : conversations.length === 0 ? (
 						<p className="px-3 py-8 text-center text-xs text-muted-foreground">
-							Keine Konversationen vorhanden.
+							No conversations available.
 						</p>
 					) : (
 						<div className="flex flex-col gap-1.5">
@@ -251,7 +251,7 @@ export function ConversationsPage() {
 														: "text-foreground",
 												)}
 											>
-												{conv.sellerName || "Unbekannt"}
+												{conv.sellerName || "Unknown"}
 											</p>
 											<Badge
 												variant={
@@ -304,7 +304,7 @@ export function ConversationsPage() {
 					<div className="flex flex-1 flex-col items-center justify-center text-center">
 						<MessageSquare className="mb-3 size-10 text-muted-foreground/40" />
 						<p className="text-sm text-muted-foreground">
-							Wähle eine Konversation aus der Liste.
+							Select a conversation from the list.
 						</p>
 					</div>
 				) : loadingDetail ? (
@@ -317,7 +317,7 @@ export function ConversationsPage() {
 						<div className="flex items-center justify-between border-b px-5 py-3">
 							<div className="min-w-0">
 								<h2 className="truncate text-sm font-semibold">
-									{detail!.sellerName || "Unbekannt"}
+									{detail!.sellerName || "Unknown"}
 								</h2>
 								<p className="truncate text-xs text-muted-foreground">
 									{detail!.listing?.title ?? detail!.listingId}
@@ -333,7 +333,7 @@ export function ConversationsPage() {
 								{!isStopped && (
 									<Button variant="outline" size="sm" onClick={handleStop}>
 										<Square className="size-3" />
-										Stoppen
+										Stop
 									</Button>
 								)}
 							</div>
@@ -346,7 +346,7 @@ export function ConversationsPage() {
 									<div className="flex flex-col items-center justify-center py-16 text-center">
 										<MessageSquare className="mb-3 size-10 text-muted-foreground/40" />
 										<p className="text-sm text-muted-foreground">
-											Noch keine Nachrichten.
+											No messages yet.
 										</p>
 									</div>
 								)}
@@ -407,7 +407,7 @@ export function ConversationsPage() {
 						<div className="border-t px-5 py-3">
 							{isStopped ? (
 								<p className="text-center text-xs text-muted-foreground">
-									Konversation beendet.
+									Conversation ended.
 								</p>
 							) : (
 								<form
@@ -417,7 +417,7 @@ export function ConversationsPage() {
 									<Input
 										value={input}
 										onChange={(e) => setInput(e.target.value)}
-										placeholder="Seller-Nachricht eingeben..."
+										placeholder="Enter seller message..."
 										autoFocus
 									/>
 									<Button

@@ -25,7 +25,7 @@ const NAV_SECTIONS: NavSection[] = [
 		items: [{ to: "/", label: "Dashboard", icon: LayoutDashboard }],
 	},
 	{
-		label: "Verwaltung",
+		label: "Management",
 		items: [
 			{ to: "/companies", label: "Companies", icon: Building2 },
 			{ to: "/brokers", label: "Users", icon: Briefcase },
@@ -34,7 +34,7 @@ const NAV_SECTIONS: NavSection[] = [
 	{
 		label: "Outreach",
 		items: [
-			{ to: "/conversations", label: "Konversationen", icon: MessagesSquare },
+			{ to: "/conversations", label: "Conversations", icon: MessagesSquare },
 		],
 	},
 	{

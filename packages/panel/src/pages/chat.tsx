@@ -1,8 +1,8 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
-import { TEST_LISTINGS, type Listing } from "@/data/listings";
 import { api, type BrokerRow } from "@/lib/api";
+import type { ListingWithLatestVersion } from "@scraper/api-types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,12 +20,29 @@ import {
 import { cn } from "@/lib/utils";
 
 export function ChatPage() {
-	const [selectedListing, setSelectedListing] = useState<Listing>(
-		TEST_LISTINGS[0],
+	const [listings, setListings] = useState<ListingWithLatestVersion[]>([]);
+	const [selectedListingId, setSelectedListingId] = useState<string | null>(
+		null,
 	);
 	const [brokers, setBrokers] = useState<BrokerRow[]>([]);
 	const [selectedBroker, setSelectedBroker] = useState<BrokerRow | null>(null);
 	const [brokerExpanded, setBrokerExpanded] = useState(true);
+	const [loadingListings, setLoadingListings] = useState(true);
+
+	// Load listings
+	useEffect(() => {
+		setLoadingListings(true);
+		api
+			.getListings(1, 100)
+			.then((res) => {
+				setListings(res.listings);
+				if (res.listings.length > 0 && !selectedListingId) {
+					setSelectedListingId(res.listings[0].id);
+				}
+			})
+			.catch(() => {})
+			.finally(() => setLoadingListings(false));
+	}, []);
 
 	const loadBrokers = useCallback(() => {
 		api
@@ -43,10 +60,24 @@ export function ChatPage() {
 		loadBrokers();
 	}, [loadBrokers]);
 
+	const selectedListing = useMemo(
+		() => listings.find((l) => l.id === selectedListingId),
+		[listings, selectedListingId],
+	);
+
 	const brokerRef = useRef(selectedBroker);
 	brokerRef.current = selectedBroker;
 	const listingRef = useRef(selectedListing);
 	listingRef.current = selectedListing;
+
+	// Build listing text from real data
+	const listingText = useMemo(() => {
+		if (!selectedListing?.latestVersion) return "";
+		const v = selectedListing.latestVersion;
+		return [v.title, v.price ?? "", v.location ?? "", "", v.description ?? ""]
+			.filter(Boolean)
+			.join("\n");
+	}, [selectedListing]);
 
 	const transport = useMemo(
 		() =>
@@ -64,7 +95,17 @@ export function ChatPage() {
 									bio: b.bio ?? "",
 								}
 							: undefined,
-						listingText: listingRef.current.rawText,
+						listingText: listingRef.current
+							? [
+									listingRef.current.latestVersion?.title ?? "",
+									listingRef.current.latestVersion?.price ?? "",
+									listingRef.current.latestVersion?.location ?? "",
+									"",
+									listingRef.current.latestVersion?.description ?? "",
+								]
+									.filter(Boolean)
+									.join("\n")
+							: "",
 					};
 				},
 			}),
@@ -94,7 +135,7 @@ export function ChatPage() {
 	}
 
 	async function handleGenerate() {
-		if (generating || !selectedBroker) return;
+		if (generating || !selectedBroker || !selectedListing) return;
 		setGenerating(true);
 		setGenerateMeta(null);
 
@@ -103,9 +144,9 @@ export function ChatPage() {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					listingText: selectedListing.rawText,
+					listingText,
 					listingId: selectedListing.id,
-					sellerName: selectedListing.sellerName,
+					sellerName: selectedListing.sellerName ?? "Unknown",
 					persona: {
 						name: selectedBroker.name,
 						firma: selectedBroker.companyName ?? "",
@@ -223,83 +264,109 @@ export function ChatPage() {
 					<div className="flex items-center gap-2 px-4 py-3">
 						<Building2 className="size-4 text-muted-foreground" />
 						<span className="text-sm font-semibold">Inserate</span>
+						<span className="ml-auto text-xs text-muted-foreground">
+							{listings.length}
+						</span>
 					</div>
 
 					<div className="flex-1 overflow-y-auto border-t px-3 py-3">
-						<div className="flex flex-col gap-1.5">
-							{TEST_LISTINGS.map((listing) => (
-								<button
-									key={listing.id}
-									type="button"
-									onClick={() => {
-										setSelectedListing(listing);
-										setGenerateMeta(null);
-									}}
-									className={cn(
-										"w-full rounded-lg px-3 py-2.5 text-left transition-colors",
-										selectedListing.id === listing.id
-											? "bg-primary text-primary-foreground"
-											: "hover:bg-muted",
-									)}
-								>
-									<p
-										className={cn(
-											"text-sm font-medium leading-snug",
-											selectedListing.id === listing.id
-												? "text-primary-foreground"
-												: "text-foreground",
-										)}
-									>
-										{listing.title}
-									</p>
-									<div className="mt-1 flex items-center gap-1.5">
-										<MapPin
+						{loadingListings ? (
+							<div className="flex items-center justify-center py-8">
+								<Loader2 className="size-5 animate-spin text-muted-foreground" />
+							</div>
+						) : listings.length === 0 ? (
+							<p className="px-3 py-8 text-center text-xs text-muted-foreground">
+								Keine Inserate gefunden.
+							</p>
+						) : (
+							<div className="flex flex-col gap-1.5">
+								{listings.map((listing) => {
+									const isSelected = selectedListingId === listing.id;
+									return (
+										<button
+											key={listing.id}
+											type="button"
+											onClick={() => {
+												setSelectedListingId(listing.id);
+												setGenerateMeta(null);
+											}}
 											className={cn(
-												"size-3",
-												selectedListing.id === listing.id
-													? "text-primary-foreground/70"
-													: "text-muted-foreground",
-											)}
-										/>
-										<span
-											className={cn(
-												"text-xs",
-												selectedListing.id === listing.id
-													? "text-primary-foreground/70"
-													: "text-muted-foreground",
+												"w-full rounded-lg px-3 py-2.5 text-left transition-colors",
+												isSelected
+													? "bg-primary text-primary-foreground"
+													: "hover:bg-muted",
 											)}
 										>
-											{listing.location} &middot; {listing.price}
-										</span>
-									</div>
-								</button>
-							))}
-						</div>
+											<p
+												className={cn(
+													"text-sm font-medium leading-snug line-clamp-2",
+													isSelected
+														? "text-primary-foreground"
+														: "text-foreground",
+												)}
+											>
+												{listing.latestVersion?.title ?? listing.id}
+											</p>
+											<div className="mt-1 flex items-center gap-1.5">
+												<MapPin
+													className={cn(
+														"size-3 shrink-0",
+														isSelected
+															? "text-primary-foreground/70"
+															: "text-muted-foreground",
+													)}
+												/>
+												<span
+													className={cn(
+														"text-xs truncate",
+														isSelected
+															? "text-primary-foreground/70"
+															: "text-muted-foreground",
+													)}
+												>
+													{listing.latestVersion?.location ?? "-"} &middot;{" "}
+													{listing.latestVersion?.price ?? "-"}
+												</span>
+											</div>
+										</button>
+									);
+								})}
+							</div>
+						)}
 					</div>
 
 					{/* Generate Button */}
 					<div className="border-t px-4 py-3">
-						<div className="mb-3">
-							<p className="text-xs text-muted-foreground">Ausgewählt</p>
-							<p className="mt-0.5 text-sm font-medium">
-								{selectedListing.title}
+						{selectedListing ? (
+							<>
+								<div className="mb-3">
+									<p className="text-xs text-muted-foreground">Ausgewählt</p>
+									<p className="mt-0.5 text-sm font-medium line-clamp-2">
+										{selectedListing.latestVersion?.title ?? selectedListing.id}
+									</p>
+									<p className="text-xs text-muted-foreground">
+										{selectedListing.latestVersion?.location ?? "-"} &middot;{" "}
+										{selectedListing.latestVersion?.price ?? "-"}
+									</p>
+								</div>
+								<Button
+									onClick={handleGenerate}
+									disabled={generating || !selectedBroker}
+									className="w-full"
+								>
+									{generating ? (
+										<Loader2 className="size-4 animate-spin" />
+									) : (
+										<Sparkles className="size-4" />
+									)}
+									{generating ? "Generiert..." : "Erstnachricht generieren"}
+								</Button>
+							</>
+						) : (
+							<p className="text-xs text-center text-muted-foreground py-2">
+								Wähle ein Inserat aus.
 							</p>
-							<p className="text-xs text-muted-foreground">
-								{selectedListing.location} &middot; {selectedListing.price}
-							</p>
-						</div>
-						<Button
-							onClick={handleGenerate}
-							disabled={generating}
-							className="w-full"
-						>
-							{generating ? (
-								<Loader2 className="size-4 animate-spin" />
-							) : (
-								<Sparkles className="size-4" />
-							)}
-							{generating ? "Generiert..." : "Erstnachricht generieren"}
-						</Button>
+						)}
 					</div>
 				</Card>
 			</div>
@@ -311,8 +378,14 @@ export function ChatPage() {
 					<div>
 						<h2 className="text-sm font-semibold">AI Sandbox</h2>
 						<p className="text-xs text-muted-foreground">
-							Verkäufer: {selectedListing.sellerName}
-							{selectedBroker && <> &middot; User: {selectedBroker.name}</>}
+							{selectedListing ? (
+								<>
+									Verkäufer: {selectedListing.sellerName ?? "Unknown"}
+									{selectedBroker && <> &middot; User: {selectedBroker.name}</>}
+								</>
+							) : (
+								"Wähle ein Inserat aus"
+							)}
 						</p>
 					</div>
 					{generateMeta && (

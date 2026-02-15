@@ -20,6 +20,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 const EMPTY_FORM: CompanyInput = {
 	name: "",
@@ -29,7 +30,7 @@ const EMPTY_FORM: CompanyInput = {
 	billingStreet2: "",
 	billingCity: "",
 	billingZipCode: "",
-	billingCountry: "Deutschland",
+	billingCountry: "Germany",
 	ustId: "",
 	iban: "",
 	bic: "",
@@ -49,7 +50,7 @@ export function CompaniesPage() {
 		api
 			.getCompanies()
 			.then(setCompanies)
-			.catch(() => setError("Fehler beim Laden"));
+			.catch(() => setError("Error loading data"));
 	}, []);
 
 	useEffect(() => {
@@ -104,7 +105,7 @@ export function CompaniesPage() {
 			setEditing(null);
 			load();
 		} catch {
-			setError("Fehler beim Speichern");
+			setError("Error saving");
 		} finally {
 			setSaving(false);
 		}
@@ -116,7 +117,7 @@ export function CompaniesPage() {
 			load();
 			if (editing === id) setEditing(null);
 		} catch {
-			setError("Fehler beim Löschen");
+			setError("Error deleting");
 		}
 	}
 
@@ -141,7 +142,7 @@ export function CompaniesPage() {
 				{editing === null && (
 					<Button onClick={startNew} size="sm">
 						<Plus className="mr-1 h-4 w-4" />
-						Neue Firma
+						New Company
 					</Button>
 				)}
 			</div>
@@ -152,7 +153,7 @@ export function CompaniesPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle>
-							{editing === "new" ? "Neue Firma" : "Firma bearbeiten"}
+							{editing === "new" ? "New Company" : "Edit Company"}
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
@@ -211,32 +212,32 @@ export function CompaniesPage() {
 								<ZipCodeGroupManager companyId={editing} />
 							)}
 
-							{/* Beschreibung */}
+							{/* Description */}
 							<div className="border-t pt-4">
 								<div className="space-y-1">
-									<Label>Beschreibung</Label>
+									<Label>Description</Label>
 									<textarea
 										className="border-input bg-transparent placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
 										rows={2}
 										value={form.description ?? ""}
 										onChange={(e) => updateField("description", e.target.value)}
-										placeholder="Beschreibung des Unternehmens..."
+										placeholder="Company description..."
 									/>
 								</div>
 							</div>
 
-							{/* Admin: Rechnungsadresse */}
+							{/* Admin: Billing Address */}
 							<div className="border-t pt-4">
-								<p className="mb-3 text-sm font-medium">Rechnungsadresse</p>
+								<p className="mb-3 text-sm font-medium">Billing Address</p>
 								<div className="grid grid-cols-2 gap-4">
 									<Field
-										label="Straße"
+										label="Street"
 										value={form.billingStreet ?? ""}
 										onChange={(v) => updateField("billingStreet", v)}
 										placeholder="Musterstraße 1"
 									/>
 									<Field
-										label="Adresszeile 2"
+										label="Address Line 2"
 										value={form.billingStreet2 ?? ""}
 										onChange={(v) => updateField("billingStreet2", v)}
 										placeholder="Gebäude B, 3. OG"
@@ -245,14 +246,14 @@ export function CompaniesPage() {
 								<div className="mt-2 grid grid-cols-2 gap-4">
 									<div className="grid grid-cols-3 gap-2">
 										<Field
-											label="PLZ"
+											label="Zip Code"
 											value={form.billingZipCode ?? ""}
 											onChange={(v) => updateField("billingZipCode", v)}
 											placeholder="79111"
 										/>
 										<div className="col-span-2">
 											<Field
-												label="Stadt"
+												label="City"
 												value={form.billingCity ?? ""}
 												onChange={(v) => updateField("billingCity", v)}
 												placeholder="Freiburg"
@@ -260,7 +261,7 @@ export function CompaniesPage() {
 										</div>
 									</div>
 									<Field
-										label="Land"
+										label="Country"
 										value={form.billingCountry ?? "Deutschland"}
 										onChange={(v) => updateField("billingCountry", v)}
 									/>
@@ -277,9 +278,9 @@ export function CompaniesPage() {
 								/>
 							</div>
 
-							{/* Admin: Bankdaten */}
+							{/* Admin: Bank Details */}
 							<div className="border-t pt-4">
-								<p className="mb-3 text-sm font-medium">Bankdaten</p>
+								<p className="mb-3 text-sm font-medium">Bank Details</p>
 								<div className="grid grid-cols-3 gap-4">
 									<Field
 										label="IBAN"
@@ -294,7 +295,7 @@ export function CompaniesPage() {
 										placeholder="COBADEFFXXX"
 									/>
 									<Field
-										label="Bankname"
+										label="Bank Name"
 										value={form.bankName ?? ""}
 										onChange={(v) => updateField("bankName", v)}
 										placeholder="Commerzbank"
@@ -304,15 +305,11 @@ export function CompaniesPage() {
 
 							<div className="flex gap-2 border-t pt-4">
 								<Button onClick={save} disabled={saving}>
-									{saving
-										? "Speichert..."
-										: editing === "new"
-											? "Anlegen"
-											: "Speichern"}
+									{saving ? "Saving..." : editing === "new" ? "Create" : "Save"}
 								</Button>
 								<Button variant="outline" onClick={cancel}>
 									<X className="mr-1 h-4 w-4" />
-									Abbrechen
+									Cancel
 								</Button>
 							</div>
 						</div>
@@ -322,12 +319,12 @@ export function CompaniesPage() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Alle Companies</CardTitle>
+					<CardTitle>All Companies</CardTitle>
 				</CardHeader>
 				<CardContent>
 					{companies.length === 0 ? (
 						<p className="text-muted-foreground text-sm">
-							Noch keine Companies angelegt.
+							No companies created yet.
 						</p>
 					) : (
 						<Table>
@@ -355,7 +352,7 @@ export function CompaniesPage() {
 										<TableCell>{c.brokerCount ?? 0}</TableCell>
 										<TableCell>
 											<Badge variant={c.active ? "default" : "secondary"}>
-												{c.active ? "Aktiv" : "Inaktiv"}
+												{c.active ? "Active" : "Inactive"}
 											</Badge>
 										</TableCell>
 										<TableCell>
@@ -453,7 +450,7 @@ function ZipCodeGroupManager({ companyId }: { companyId: number }) {
 
 	function getBrokerNames(brokerIds: number[]): string {
 		if (brokerIds.length === 0 || brokerIds.length === companyBrokers.length) {
-			return "Alle Makler";
+			return "All Brokers";
 		}
 		const names = brokerIds
 			.map((id) => companyBrokers.find((b) => b.id === id)?.name)
@@ -463,10 +460,10 @@ function ZipCodeGroupManager({ companyId }: { companyId: number }) {
 
 	return (
 		<div className="border-t pt-4">
-			<p className="mb-3 text-sm font-medium">PLZ-Abonnements</p>
+			<p className="mb-3 text-sm font-medium">Zip Code Subscriptions</p>
 
 			{loading ? (
-				<p className="text-muted-foreground text-sm">Laden...</p>
+				<p className="text-muted-foreground text-sm">Loading...</p>
 			) : (
 				<>
 					{groups.length > 0 && (
@@ -480,68 +477,15 @@ function ZipCodeGroupManager({ companyId }: { companyId: number }) {
 										<div className="flex items-start justify-between gap-2">
 											<div className="min-w-0 flex-1 space-y-2">
 												<p className="font-mono text-sm">
-													PLZ: {g.zipCodes.join(", ")}
+													Zip: {g.zipCodes.join(", ")}
 												</p>
 												<div className="space-y-1">
-													<Label className="text-xs">Makler:</Label>
-													<div className="relative">
-														<select
-															multiple
-															className="border-input focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border bg-transparent px-3 py-2 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
-															size={Math.min(companyBrokers.length, 4)}
-															value={currentBrokerIds.map(String)}
-															onChange={(e) => {
-																const selected = Array.from(
-																	e.target.selectedOptions,
-																).map((opt) => Number(opt.value));
-																updateGroupBrokers(g.id, selected);
-															}}
-														>
-															{companyBrokers.map((b) => (
-																<option key={b.id} value={b.id}>
-																	{b.name}
-																</option>
-															))}
-														</select>
-													</div>
-													{currentBrokerIds.length === 0 ||
-													currentBrokerIds.length === companyBrokers.length ? (
-														<p className="text-muted-foreground text-sm">
-															Alle Makler
-														</p>
-													) : (
-														<div className="flex flex-wrap gap-1">
-															{currentBrokerIds.map((brokerId) => {
-																const broker = companyBrokers.find(
-																	(b) => b.id === brokerId,
-																);
-																if (!broker) return null;
-																return (
-																	<Badge
-																		key={brokerId}
-																		variant="secondary"
-																		className="cursor-pointer gap-1 pl-2 pr-1"
-																	>
-																		{broker.name}
-																		<button
-																			onClick={() =>
-																				updateGroupBrokers(
-																					g.id,
-																					removeBroker(
-																						currentBrokerIds,
-																						brokerId,
-																					),
-																				)
-																			}
-																			className="hover:bg-muted-foreground/20 rounded-sm p-0.5"
-																		>
-																			<X className="h-3 w-3" />
-																		</button>
-																	</Badge>
-																);
-															})}
-														</div>
-													)}
+													<Label className="text-xs">Brokers:</Label>
+													<MultiSelect
+														options={companyBrokers}
+														value={currentBrokerIds}
+														onChange={(ids) => updateGroupBrokers(g.id, ids)}
+													/>
 												</div>
 											</div>
 											<Button
@@ -560,14 +504,14 @@ function ZipCodeGroupManager({ companyId }: { companyId: number }) {
 
 					{groups.length === 0 && (
 						<p className="text-muted-foreground mb-3 text-sm">
-							Noch keine PLZ-Abonnements angelegt.
+							No zip code subscriptions created yet.
 						</p>
 					)}
 
 					<div className="mt-3 space-y-3 rounded-md border p-3 bg-muted/20">
 						<div className="flex items-end gap-2">
 							<div className="flex-1 space-y-1">
-								<Label>PLZ (kommagetrennt)</Label>
+								<Label>Zip Codes (comma separated)</Label>
 								<Input
 									value={newZip}
 									onChange={(e) => setNewZip(e.target.value)}
@@ -579,64 +523,17 @@ function ZipCodeGroupManager({ companyId }: { companyId: number }) {
 							</div>
 							<Button onClick={addGroup} size="sm">
 								<Plus className="mr-1 h-4 w-4" />
-								PLZ hinzufügen
+								Add Zip Code
 							</Button>
 						</div>
 						{companyBrokers.length > 0 && (
 							<div className="space-y-1">
 								<Label className="text-xs">Makler:</Label>
-								<div className="relative">
-									<select
-										multiple
-										className="border-input focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border bg-transparent px-3 py-2 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
-										size={Math.min(companyBrokers.length, 4)}
-										value={newBrokerIds.map(String)}
-										onChange={(e) => {
-											const selected = Array.from(e.target.selectedOptions).map(
-												(opt) => Number(opt.value),
-											);
-											setNewBrokerIds(selected);
-										}}
-									>
-										{companyBrokers.map((b) => (
-											<option key={b.id} value={b.id}>
-												{b.name}
-											</option>
-										))}
-									</select>
-								</div>
-								{newBrokerIds.length === 0 ||
-								newBrokerIds.length === companyBrokers.length ? (
-									<p className="text-muted-foreground text-sm">Alle Makler</p>
-								) : (
-									<div className="flex flex-wrap gap-1">
-										{newBrokerIds.map((brokerId) => {
-											const broker = companyBrokers.find(
-												(b) => b.id === brokerId,
-											);
-											if (!broker) return null;
-											return (
-												<Badge
-													key={brokerId}
-													variant="secondary"
-													className="cursor-pointer gap-1 pl-2 pr-1"
-												>
-													{broker.name}
-													<button
-														onClick={() =>
-															setNewBrokerIds(
-																removeBroker(newBrokerIds, brokerId),
-															)
-														}
-														className="hover:bg-muted-foreground/20 rounded-sm p-0.5"
-													>
-														<X className="h-3 w-3" />
-													</button>
-												</Badge>
-											);
-										})}
-									</div>
-								)}
+								<MultiSelect
+									options={companyBrokers}
+									value={newBrokerIds}
+									onChange={setNewBrokerIds}
+								/>
 							</div>
 						)}
 					</div>
