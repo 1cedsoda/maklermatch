@@ -2,46 +2,57 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { Window } from "happy-dom";
-import { extractListingDetail } from "./extract-listing-detail";
+import { extractListingDetail } from "./listing-detail";
 
 const FIXTURE = readFileSync(
-	join(import.meta.dir, "fixtures", "listing-detail.html"),
+	join(import.meta.dir, "..", "fixtures", "listing-detail.html"),
 	"utf-8",
 );
 
 const FIXTURE_PRIVATE_ANONYMOUS = readFileSync(
-	join(import.meta.dir, "fixtures", "private-seller-anonymous.html"),
+	join(import.meta.dir, "..", "fixtures", "private-seller-anonymous.html"),
 	"utf-8",
 );
 
 const FIXTURE_PRIVATE_NAMED = readFileSync(
-	join(import.meta.dir, "fixtures", "private-seller-named.html"),
+	join(import.meta.dir, "..", "fixtures", "private-seller-named.html"),
 	"utf-8",
 );
 
 const FIXTURE_COMMERCIAL_BIZTEASER = readFileSync(
-	join(import.meta.dir, "fixtures", "commercial-seller-bizteaser.html"),
+	join(import.meta.dir, "..", "fixtures", "commercial-seller-bizteaser.html"),
 	"utf-8",
 );
 
 const FIXTURE_PRIVATE_NO_OTHER_ADS = readFileSync(
-	join(import.meta.dir, "fixtures", "private-seller-no-other-ads.html"),
+	join(import.meta.dir, "..", "fixtures", "private-seller-no-other-ads.html"),
 	"utf-8",
 );
 
 const FIXTURE_COMMERCIAL_BIZTEASER_PHONE = readFileSync(
-	join(import.meta.dir, "fixtures", "commercial-seller-bizteaser-phone.html"),
+	join(
+		import.meta.dir,
+		"..",
+		"fixtures",
+		"commercial-seller-bizteaser-phone.html",
+	),
 	"utf-8",
 );
 
 const FIXTURE_COMMERCIAL_BIZTEASER_VONPOLL = readFileSync(
-	join(import.meta.dir, "fixtures", "commercial-seller-bizteaser-vonpoll.html"),
+	join(
+		import.meta.dir,
+		"..",
+		"fixtures",
+		"commercial-seller-bizteaser-vonpoll.html",
+	),
 	"utf-8",
 );
 
 const FIXTURE_COMMERCIAL_BIZTEASER_VONPOLL_TEMPELHOF = readFileSync(
 	join(
 		import.meta.dir,
+		"..",
 		"fixtures",
 		"commercial-seller-bizteaser-vonpoll-tempelhof.html",
 	),

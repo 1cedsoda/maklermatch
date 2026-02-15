@@ -1,5 +1,5 @@
 import type { BrowserIdentity } from "@scraper/humanize";
-import { launchBrowser } from "./browser";
+import { launchBrowser } from "../utils/browser";
 import {
 	searchViaStartpage,
 	dismissCookieBanner,
@@ -8,9 +8,9 @@ import {
 	filterPrivateListings,
 	setLocation,
 	waitForListings,
-} from "./navigation";
-import { crawlAllPages, type CrawlResult } from "./crawl";
-import { logger } from "./logger";
+} from "../navigation";
+import { crawlAllPages, type CrawlResult } from "./crawl-all-pages";
+import { logger } from "../utils/logger";
 import type { Result } from "@scraper/scraping-core";
 
 const log = logger.child({ module: "scrape" });

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { Window } from "happy-dom";
-import { extractPagination } from "./extract-pagination";
+import { extractPagination } from "./pagination";
 
 function parseHTML(html: string): Document {
 	const window = new Window();

@@ -5,7 +5,7 @@ import {
 	type ScraperToServerEvents,
 } from "@scraper/api-types";
 import type { ApiClient } from "./api-client";
-import { executeScrapePass } from "./scrape";
+import { executeScrapePass } from "./scrape-pass";
 import { sendMessage } from "./message-sender";
 import { logger } from "./logger";
 

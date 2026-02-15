@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { Window } from "happy-dom";
-import { extractListings, parseDate } from "./extract-listings";
+import { extractListings, parseDate } from "./listings";
 
 function parseHTML(html: string): Document {
 	const window = new Window();
@@ -11,7 +11,7 @@ function parseHTML(html: string): Document {
 }
 
 const FIXTURE_HTML = readFileSync(
-	join(import.meta.dir, "fixtures/listings.html"),
+	join(import.meta.dir, "../fixtures/listings.html"),
 	"utf-8",
 );
 

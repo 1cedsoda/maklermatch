@@ -9,10 +9,10 @@ import {
 import { chromium, type Browser, type Page } from "patchright";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { dismissLoginOverlay } from "./navigation";
+import { dismissLoginOverlay } from "./overlays";
 
 const FIXTURE = readFileSync(
-	join(import.meta.dir, "fixtures", "login-overlay.html"),
+	join(import.meta.dir, "..", "fixtures", "login-overlay.html"),
 	"utf-8",
 );
 

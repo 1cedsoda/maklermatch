@@ -1,5 +1,5 @@
 import type { ScrapedListing } from "@scraper/scraping-core";
-import type { KleinanzeigenListingDetail } from "./extract-listing-detail";
+import type { KleinanzeigenListingDetail } from "../extract/listing-detail";
 
 export interface ScrapeHandler {
 	/**

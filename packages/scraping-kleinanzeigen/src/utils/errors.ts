@@ -1,4 +1,4 @@
-import type { ScrapeResult } from "./handler";
+import type { ScrapeResult } from "../flows/scrape-handler";
 
 export class BrowserClosedError extends Error {
 	readonly partialResult: ScrapeResult;

@@ -5,9 +5,9 @@ import type {
 	ScrapeOptions,
 } from "@scraper/scraping-core";
 import type { Result } from "@scraper/scraping-core";
-import { scrapeListingPages } from "./scrape-listing-pages";
-import { extractListings } from "./extract-listings";
-import type { CrawlResult } from "./crawl";
+import { scrapeListingPages } from "./scrape-pipeline";
+import { extractListings } from "../extract/listings";
+import type { CrawlResult } from "./crawl-all-pages";
 
 export class KleinanzeigenScraper implements Scraper {
 	readonly source = "kleinanzeigen";
