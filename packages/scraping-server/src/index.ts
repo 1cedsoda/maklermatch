@@ -7,6 +7,7 @@ import {
 	getActiveTaskIds,
 	getMaxConcurrency,
 } from "./socket-handlers";
+
 import { logger, setLogLineHandler } from "./logger";
 
 const log = logger.child({ module: "main" });
@@ -26,7 +27,9 @@ const socket = io(API_SERVER_URL, {
 });
 
 const emitLogLine = (line: string, ts: number) => {
-	socket.volatile.emit(SocketEvents.LOG_LINE, { line, ts });
+	const taskIds = getActiveTaskIds();
+	const taskId = taskIds.length === 1 ? taskIds[0] : undefined;
+	socket.volatile.emit(SocketEvents.LOG_LINE, { line, ts, taskId });
 };
 setLogLineHandler(emitLogLine);
 setKleinanzeigenLogHandler(emitLogLine);

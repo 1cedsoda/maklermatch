@@ -28,12 +28,12 @@ export function ScrapingTaskDetailPage() {
 
 	// Poll live logs when task is running
 	useEffect(() => {
-		if (!detail?.scraperId) return;
+		if (!detail?.scraperId || detail.task.status !== "pending") return;
 
-		const scraperId = detail.scraperId;
+		const taskId = detail.task.id;
 		const poll = () => {
 			api
-				.getScraperLogs(scraperId)
+				.getTaskLogs(taskId)
 				.then((res) => setLiveLines(res.lines))
 				.catch(() => {});
 		};
@@ -43,7 +43,7 @@ export function ScrapingTaskDetailPage() {
 		return () => {
 			if (logPollRef.current) clearInterval(logPollRef.current);
 		};
-	}, [detail?.scraperId]);
+	}, [detail?.scraperId, detail?.task.status]);
 
 	// Re-fetch task detail while pending to detect completion
 	useEffect(() => {

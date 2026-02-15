@@ -11,7 +11,11 @@ import {
 	targetToKleinanzeigenSearch,
 } from "../services/targets";
 import { getScrapingTask } from "../services/ingest";
-import { getLogLines, getAllLogLines } from "../services/log-buffer";
+import {
+	getLogLines,
+	getAllLogLines,
+	getTaskLogLines,
+} from "../services/log-buffer";
 
 const router = Router();
 
@@ -120,6 +124,11 @@ router.post("/cancel", async (req, res) => {
 });
 
 router.get("/logs", (req, res) => {
+	const taskId = req.query.taskId ? Number(req.query.taskId) : undefined;
+	if (taskId) {
+		res.json({ taskId, lines: getTaskLogLines(taskId) });
+		return;
+	}
 	const scraperId = req.query.scraperId as string | undefined;
 	if (scraperId) {
 		res.json({ scraperId, lines: getLogLines(scraperId) });

@@ -325,6 +325,12 @@ class PanelApiClient {
 		return this.request("GET", `/api/scraper/logs?scraperId=${scraperId}`);
 	}
 
+	getTaskLogs(
+		taskId: number,
+	): Promise<{ taskId: number; lines: { line: string; ts: number }[] }> {
+		return this.request("GET", `/api/scraper/logs?taskId=${taskId}`);
+	}
+
 	getSellers(page = 1, limit = 20): Promise<SellersResponse> {
 		return this.request("GET", `/api/sellers?page=${page}&limit=${limit}`);
 	}
