@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import type { AgentConfig } from "./agent";
 
 export interface LLMClient {
@@ -7,12 +7,10 @@ export interface LLMClient {
 }
 
 export function createLLMClient(config: AgentConfig = {}): LLMClient {
-	const provider = createOpenAICompatible({
-		name: "langdock",
-		baseURL: "https://api.langdock.com/openai/eu/v1",
-		apiKey: config.apiKey ?? process.env.LANGDOCK_API_KEY,
+	const anthropic = createAnthropic({
+		apiKey: config.apiKey ?? process.env.ANTHROPIC_API_KEY,
 	});
-	const model = provider(config.model ?? "gpt-5-chat-latest");
+	const model = anthropic(config.model ?? "claude-sonnet-4-5-20250929");
 
 	return {
 		async generate(systemPrompt: string, userPrompt: string): Promise<string> {
