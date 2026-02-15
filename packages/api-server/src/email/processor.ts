@@ -8,6 +8,7 @@ import {
 } from "../db/schema";
 import { parseKleinanzeigenEmail } from "./parser";
 import { logger } from "../logger";
+import { handleSellerReply as processSellerReply } from "../services/reply-handler";
 
 const log = logger.child({ module: "email-processor" });
 
@@ -119,9 +120,8 @@ async function handleSellerReply(
 		})
 		.run();
 
-	// Update conversation status, seller name, and Kleinanzeigen conversation ID
+	// Update conversation metadata, seller name, and Kleinanzeigen conversation ID
 	const updates: Record<string, unknown> = {
-		status: "reply_received",
 		lastMessageAt: new Date().toISOString(),
 	};
 	if (senderName && !conversation.sellerName) {
@@ -145,9 +145,13 @@ async function handleSellerReply(
 		.where(eq(inboundEmails.id, emailId))
 		.run();
 
-	// TODO: Trigger reply generation via scheduler
-	// This will be handled by the scheduler polling for conversations
-	// with status "reply_received"
+	// Trigger reply handler
+	processSellerReply(conversation.id).catch((err) =>
+		log.error(
+			{ conversationId: conversation.id, err },
+			"Failed to process seller reply",
+		),
+	);
 }
 
 async function handleOutboundConfirmation(

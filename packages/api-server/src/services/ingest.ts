@@ -15,6 +15,7 @@ import {
 	sellerSnapshots,
 } from "../db/schema";
 import { logger } from "../logger";
+import { processNewListing } from "./lead-processor";
 
 const log = logger.child({ module: "ingest" });
 
@@ -428,6 +429,14 @@ export function ingestListings(
 					}
 
 					newCount++;
+
+					// Trigger lead processing for new listings
+					processNewListing(item.id).catch((err) =>
+						log.error(
+							{ listingId: item.id, err },
+							"Failed to process new listing",
+						),
+					);
 				}
 			});
 		} catch (err) {
