@@ -1,4 +1,4 @@
-import { QUALITY_CHECK } from "@scraper/agent";
+import { QUALITY_CHECK, extractVorname } from "@scraper/agent";
 import {
 	FORBIDDEN_OPENERS,
 	FORBIDDEN_PHRASES,
@@ -231,7 +231,7 @@ export class SpamGuard {
 	private checkSellerName(message: string, signals: ListingSignals): string[] {
 		if (!signals.sellerName) return [];
 
-		const firstName = signals.sellerName.split(/\s+/)[0];
+		const firstName = extractVorname(signals.sellerName);
 
 		if (message.includes(firstName)) {
 			return [];

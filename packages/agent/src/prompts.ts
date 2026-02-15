@@ -283,6 +283,34 @@ Würdest du antworten? Skala 1-10.
 
 Antworte NUR mit der Zahl (1-10), nichts weiter.`;
 
+/** Sentiment check: has the seller rejected the broker's offer? */
+export const SENTIMENT_REJECTION_CHECK = `\
+Du bist ein Sentiment-Analyzer für Immobilienmakler-Chats.
+
+Du bekommst eine Konversation zwischen einem Makler und einem privaten Verkäufer.
+Prüfe ob der Verkäufer EINDEUTIG gesagt hat dass er kein Interesse an Makler-Hilfe hat.
+
+EINDEUTIGE ABLEHNUNG (-> JA):
+- "Kein Interesse"
+- "Möchte lieber selbst verkaufen"
+- "Brauche keinen Makler"
+- "Habe schon einen Makler"
+- "Bitte nicht mehr kontaktieren"
+- Jede klare, unmissverständliche Absage
+
+KEINE ABLEHNUNG (-> NEIN):
+- Noch keine Antwort
+- Nachfragen stellen
+- Unverbindliche Antworten ("Schaue ich mir an", "Mal sehen")
+- Höfliche Ausweichungen ohne klares Nein
+- Zeitliche Verzögerungen ("Melde mich später")
+
+Antworte mit GENAU einem Wort in der ersten Zeile:
+- "JA" wenn eindeutige Ablehnung
+- "NEIN" wenn keine Ablehnung
+
+Danach in einer neuen Zeile ein kurzer Grund (max 15 Wörter).`;
+
 // ---------------------------------------------------------
 // HELPER
 // ---------------------------------------------------------
@@ -296,7 +324,19 @@ export function injectPersona(
 	return template.replace(/\{vorname\}/g, vorname).replace(/\{firma\}/g, firma);
 }
 
-const TITLE_PREFIXES = ["dr.", "dr", "prof.", "prof", "dipl.", "ing."];
+const TITLE_PREFIXES = [
+	"dr.",
+	"dr",
+	"prof.",
+	"prof",
+	"dipl.",
+	"ing.",
+	"herr",
+	"frau",
+	"familie",
+	"ehepaar",
+	"herrn",
+];
 
 /** Extract first name from full name, skipping academic titles. */
 export function extractVorname(fullName: string): string {

@@ -95,9 +95,15 @@ export class MessageGenerator {
 			this.persona,
 		);
 
+		const rejectionLog: string[] = [];
+
 		for (let attempt = 1; attempt <= MAX_GENERATION_RETRIES + 1; attempt++) {
 			const rawMessage = this.cleanMessage(
 				(await this.llm.generate(systemPrompt, userPrompt)).trim(),
+			);
+
+			console.info(
+				`[${listingId}] Attempt ${attempt} raw message:\n${rawMessage}\n`,
 			);
 
 			if (this.isSkip(rawMessage)) {
@@ -113,13 +119,19 @@ export class MessageGenerator {
 				const safeguardResult = await this.safeguard.check(processed);
 				if (!safeguardResult.passed) {
 					if (attempt <= MAX_GENERATION_RETRIES) {
+						const rejectionMsg = `Safeguard: ${safeguardResult.reason}`;
+						rejectionLog.push(`Attempt ${attempt}: ${rejectionMsg}`);
 						userPrompt +=
 							`\n\nVORHERIGER VERSUCH ABGELEHNT: ${safeguardResult.reason}` +
 							"\nBitte korrigiere diese Probleme.";
 						console.info(
-							`Attempt ${attempt} rejected by safeguard: ${safeguardResult.reason}`,
+							`[${listingId}] Attempt ${attempt} rejected by safeguard: ${safeguardResult.reason}`,
 						);
 						continue;
+					} else {
+						rejectionLog.push(
+							`Attempt ${attempt}: Safeguard: ${safeguardResult.reason} (final attempt)`,
+						);
 					}
 				}
 
@@ -135,12 +147,19 @@ export class MessageGenerator {
 				return { message, skipped: false, delayMs: delayResult.delayMs };
 			}
 
+			const rejectionReasons = validation.rejectionReasons.join("; ");
+			rejectionLog.push(`Attempt ${attempt}: SpamGuard: ${rejectionReasons}`);
+
 			if (attempt <= MAX_GENERATION_RETRIES) {
 				userPrompt +=
-					`\n\nVORHERIGER VERSUCH ABGELEHNT: ${validation.rejectionReasons.join("; ")}` +
+					`\n\nVORHERIGER VERSUCH ABGELEHNT: ${rejectionReasons}` +
 					"\nBitte korrigiere diese Probleme.";
 				console.info(
-					`Attempt ${attempt} rejected: ${validation.rejectionReasons.join("; ")}`,
+					`[${listingId}] Attempt ${attempt} rejected by spam guard: ${rejectionReasons}`,
+				);
+			} else {
+				console.error(
+					`[${listingId}] All attempts failed. Rejection log:\n${rejectionLog.join("\n")}`,
 				);
 			}
 		}

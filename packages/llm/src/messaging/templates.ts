@@ -49,10 +49,12 @@ export function buildListingContext(signals: ListingSignals): string {
 	const parts: string[] = [];
 
 	parts.push(`IMMOBILIE: ${signals.propertyType}`);
-	if (signals.sellerName)
+	if (signals.sellerName) {
+		const vorname = extractVorname(signals.sellerName);
 		parts.push(
-			`VERKÄUFER: ${signals.sellerName} (benutze den Vornamen in der Ansprache, nicht den vollen Namen!)`,
+			`VERKÄUFER: ${vorname} (benutze diesen Vornamen in der Ansprache!)`,
 		);
+	}
 	if (signals.title) parts.push(`Titel: ${signals.title}`);
 	if (signals.city) parts.push(`Ort: ${signals.city} (${signals.zipCode})`);
 	if (signals.price) {

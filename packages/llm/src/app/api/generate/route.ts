@@ -57,6 +57,13 @@ export async function POST(req: Request) {
 	} catch (err) {
 		console.error("Generate route error:", err);
 		const message = err instanceof Error ? err.message : "Unknown error";
+		const stack = err instanceof Error ? err.stack : undefined;
+
+		// Log full error details to server console for debugging
+		if (stack) {
+			console.error("Error stack:", stack);
+		}
+
 		return Response.json({ error: message }, { status: 500 });
 	}
 }
