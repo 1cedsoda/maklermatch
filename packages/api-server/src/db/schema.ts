@@ -224,7 +224,14 @@ export const conversations = sqliteTable("conversations", {
 	kleinanzeigenReplyTo: text("kleinanzeigen_reply_to"),
 	emailSubject: text("email_subject"),
 	status: text("status", {
-		enum: ["active", "reply_received", "stopped", "done"],
+		enum: [
+			"active",
+			"engaged",
+			"rejected",
+			"ghosted",
+			"listing_offline",
+			"done",
+		],
 	})
 		.notNull()
 		.default("active"),
@@ -234,6 +241,8 @@ export const conversations = sqliteTable("conversations", {
 		.notNull()
 		.default("initial"),
 	replySentiment: text("reply_sentiment"),
+	rejectionReason: text("rejection_reason"),
+	lastSnapshotFetchedAt: text("last_snapshot_fetched_at"),
 	firstContactAt: text("first_contact_at"),
 	lastMessageAt: text("last_message_at"),
 	nextFollowupAt: text("next_followup_at"),
@@ -279,6 +288,10 @@ export const scheduledSends = sqliteTable("scheduled_sends", {
 		.references(() => conversations.id),
 	message: text("message").notNull(),
 	sendAfter: text("send_after").notNull(),
+	messageType: text("message_type", {
+		enum: ["initial", "followup_1", "followup_2", "conversational"],
+	}),
+	hoursDelay: integer("hours_delay"),
 	status: text("status", {
 		enum: ["pending", "sending", "sent", "cancelled"],
 	})
