@@ -2,13 +2,12 @@ node_modules/
 dist/
 .DS_Store
 html/
-**/data/*.db
-**/data/*.db-shm
-**/data/*.db-wal
+**/data/
 !deployment/local/data/
 deployment/local/data/*
 !deployment/local/data/.gitkeep
 !deployment/local/data/scraper.db
+*.db
 *.db-shm
 *.db-wal
 output/
