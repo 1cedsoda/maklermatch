@@ -18,6 +18,7 @@ import conversationsRoutes from "./routes/conversations";
 import brokersRoutes from "./routes/brokers";
 import companiesRoutes from "./routes/companies";
 import companyPlzRoutes from "./routes/company-plz";
+import analyticsRoutes from "./routes/analytics";
 import { startSmtpReceiver, stopSmtpReceiver } from "./email/smtp-receiver";
 import { startSendScheduler, stopSendScheduler } from "./email/scheduler";
 import { closeSender } from "./email/smtp-sender";
@@ -51,6 +52,7 @@ app.use("/api/conversations", jwtAuth, conversationsRoutes);
 app.use("/api/brokers", jwtAuth, brokersRoutes);
 app.use("/api/companies", jwtAuth, companiesRoutes);
 app.use("/api/companies/:companyId/plz", jwtAuth, companyPlzRoutes);
+app.use("/api/analytics", jwtAuth, analyticsRoutes);
 
 // Validate environment variables
 function validateEnv() {

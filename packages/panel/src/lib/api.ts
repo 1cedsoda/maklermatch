@@ -155,6 +155,63 @@ export interface ScraperStatusResponse {
 	}[];
 }
 
+export interface AnalyticsResponse {
+	timeRange: {
+		days: number;
+		startDate: string;
+		endDate: string;
+	};
+	scraping: {
+		totalListings: number;
+		activeListings: number;
+		removedListings: number;
+		newListingsInPeriod: number;
+		scrapingTasksInPeriod: number;
+		successfulTasks: number;
+		failedTasks: number;
+		successRate: string;
+	};
+	conversations: {
+		total: number;
+		inPeriod: number;
+		byStatus: Array<{ status: string; count: number }>;
+		byStage: Array<{ stage: string; count: number }>;
+		withReplies: number;
+		responseRate: string;
+	};
+	messages: {
+		totalOutbound: number;
+		sentInPeriod: number;
+		receivedInPeriod: number;
+	};
+	leads: {
+		listingsWithConversations: number;
+		listingsWithoutConversations: number;
+		activeListingsWithConversations: number;
+		conversionRate: string;
+	};
+	charts: {
+		dailyActivity: Array<{
+			date: string;
+			outbound: number;
+			inbound: number;
+		}>;
+		dailyScraping: Array<{
+			date: string;
+			tasks: number;
+			success: number;
+			error: number;
+			listingsFound: number;
+		}>;
+		topTargets: Array<{
+			targetId: number;
+			targetName: string;
+			totalListings: number;
+			taskCount: number;
+		}>;
+	};
+}
+
 class PanelApiClient {
 	private getToken(): string | null {
 		return localStorage.getItem("token");
@@ -377,6 +434,13 @@ class PanelApiClient {
 
 	stopConversation(id: number): Promise<{ ok: boolean }> {
 		return this.request("POST", `/api/conversations/${id}/stop`);
+	}
+
+	// --- Analytics ---
+
+	getAnalytics(days?: number): Promise<AnalyticsResponse> {
+		const params = days ? `?days=${days}` : "";
+		return this.request("GET", `/api/analytics${params}`);
 	}
 }
 
