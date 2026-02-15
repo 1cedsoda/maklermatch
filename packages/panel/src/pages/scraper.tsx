@@ -4,6 +4,7 @@ import { api, type ScraperStatusResponse } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bot, MemoryStick, Cpu, Activity } from "lucide-react";
+import { formatDateTime } from "@/lib/format";
 
 function MemoryBar({
 	label,
@@ -153,7 +154,7 @@ export function ScraperPage() {
 									{/* Last run */}
 									{tasks.length === 0 && status.lastRunAt && (
 										<p className="text-xs text-muted-foreground">
-											Last run: {new Date(status.lastRunAt).toLocaleString()}
+											Last run: {formatDateTime(status.lastRunAt)}
 										</p>
 									)}
 								</CardContent>

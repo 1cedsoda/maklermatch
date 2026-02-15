@@ -11,6 +11,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import type { ScrapingTask } from "@scraper/api-types";
+import { formatDateTime } from "@/lib/format";
 
 export function ScrapingTasksPage() {
 	const [tasks, setTasks] = useState<ScrapingTask[]>([]);
@@ -57,7 +58,7 @@ export function ScrapingTasksPage() {
 									({t.targetLocation})
 								</span>
 							</TableCell>
-							<TableCell>{new Date(t.startedAt).toLocaleString()}</TableCell>
+							<TableCell>{formatDateTime(t.startedAt)}</TableCell>
 							<TableCell>
 								<StatusBadge status={t.status} />
 							</TableCell>

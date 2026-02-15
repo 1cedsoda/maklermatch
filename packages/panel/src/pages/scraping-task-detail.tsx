@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LogViewer } from "@/components/log-viewer";
 import { Cpu, ArrowLeft, XCircle } from "lucide-react";
+import { formatDateTime } from "@/lib/format";
 
 export function ScrapingTaskDetailPage() {
 	const { id } = useParams<{ id: string }>();
@@ -152,7 +153,7 @@ export function ScrapingTaskDetailPage() {
 						</p>
 						<p>
 							<span className="text-muted-foreground">Started:</span>{" "}
-							{new Date(task.startedAt).toLocaleString()}
+							{formatDateTime(task.startedAt)}
 						</p>
 						<p>
 							<span className="text-muted-foreground">Pages:</span>{" "}

@@ -12,6 +12,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import type { SellerWithSnapshots } from "@scraper/api-types";
+import { formatDateTime } from "@/lib/format";
 
 export function SellerDetailPage() {
 	const { id } = useParams<{ id: string }>();
@@ -82,11 +83,11 @@ export function SellerDetailPage() {
 						)}
 						<p>
 							<span className="text-muted-foreground">First seen:</span>{" "}
-							{new Date(seller.firstSeen).toLocaleString()}
+							{formatDateTime(seller.firstSeen)}
 						</p>
 						<p>
 							<span className="text-muted-foreground">Last seen:</span>{" "}
-							{new Date(seller.lastSeen).toLocaleString()}
+							{formatDateTime(seller.lastSeen)}
 						</p>
 					</div>
 				</CardContent>
@@ -117,7 +118,7 @@ export function SellerDetailPage() {
 								</TableCell>
 								<TableCell>{s.activeSince ?? "-"}</TableCell>
 								<TableCell>{s.otherAdsCount ?? "-"}</TableCell>
-								<TableCell>{new Date(s.seenAt).toLocaleString()}</TableCell>
+								<TableCell>{formatDateTime(s.seenAt)}</TableCell>
 							</TableRow>
 						))}
 					</TableBody>
@@ -153,9 +154,7 @@ export function SellerDetailPage() {
 									<TableCell>
 										{listing.latestVersion?.location ?? "-"}
 									</TableCell>
-									<TableCell>
-										{new Date(listing.lastSeen).toLocaleString()}
-									</TableCell>
+									<TableCell>{formatDateTime(listing.lastSeen)}</TableCell>
 								</TableRow>
 							))}
 						</TableBody>

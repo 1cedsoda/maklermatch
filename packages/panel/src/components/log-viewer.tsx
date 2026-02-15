@@ -13,7 +13,7 @@ interface LogViewerProps {
 
 function formatTs(ts: number): string {
 	const d = new Date(ts);
-	return d.toLocaleTimeString("en-GB", {
+	return d.toLocaleTimeString("de-DE", {
 		hour: "2-digit",
 		minute: "2-digit",
 		second: "2-digit",

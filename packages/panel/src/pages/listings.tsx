@@ -11,6 +11,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import type { ListingWithLatestVersion } from "@scraper/api-types";
+import { formatDateTime } from "@/lib/format";
 
 export function ListingsPage() {
 	const [searchParams, setSearchParams] = useSearchParams();
@@ -72,9 +73,7 @@ export function ListingsPage() {
 								)}
 							</TableCell>
 							<TableCell>{listing.sellerType ?? "-"}</TableCell>
-							<TableCell>
-								{new Date(listing.lastSeen).toLocaleString()}
-							</TableCell>
+							<TableCell>{formatDateTime(listing.lastSeen)}</TableCell>
 						</TableRow>
 					))}
 				</TableBody>

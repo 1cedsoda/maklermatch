@@ -23,6 +23,7 @@ import {
 	type ScrapingTask,
 	type UpdateTargetRequest,
 } from "@scraper/api-types";
+import { formatDateTime } from "@/lib/format";
 
 interface EditForm {
 	name: string;
@@ -389,9 +390,7 @@ export function TargetDetailPage() {
 						<TableBody>
 							{tasks.map((t) => (
 								<TableRow key={t.id}>
-									<TableCell>
-										{new Date(t.startedAt).toLocaleString()}
-									</TableCell>
+									<TableCell>{formatDateTime(t.startedAt)}</TableCell>
 									<TableCell>
 										<StatusBadge status={t.status} />
 									</TableCell>

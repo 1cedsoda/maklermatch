@@ -12,6 +12,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import type { SellerWithLatestSnapshot } from "@scraper/api-types";
+import { formatDateTime } from "@/lib/format";
 
 export function SellersPage() {
 	const [searchParams, setSearchParams] = useSearchParams();
@@ -70,9 +71,7 @@ export function SellersPage() {
 								{seller.latestSnapshot?.otherAdsCount ?? "-"}
 							</TableCell>
 							<TableCell>{seller.scrapedAdsCount}</TableCell>
-							<TableCell>
-								{new Date(seller.lastSeen).toLocaleString()}
-							</TableCell>
+							<TableCell>{formatDateTime(seller.lastSeen)}</TableCell>
 						</TableRow>
 					))}
 				</TableBody>

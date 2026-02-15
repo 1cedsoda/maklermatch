@@ -13,6 +13,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import type { ListingWithVersions } from "@scraper/api-types";
+import { formatDateTime } from "@/lib/format";
 
 export function ListingDetailPage() {
 	const { id } = useParams<{ id: string }>();
@@ -84,11 +85,11 @@ export function ListingDetailPage() {
 						)}
 						<p>
 							<span className="text-muted-foreground">First seen:</span>{" "}
-							{new Date(listing.firstSeen).toLocaleString()}
+							{formatDateTime(listing.firstSeen)}
 						</p>
 						<p>
 							<span className="text-muted-foreground">Last seen:</span>{" "}
-							{new Date(listing.lastSeen).toLocaleString()}
+							{formatDateTime(listing.lastSeen)}
 						</p>
 						{latestDetail?.viewCount != null && (
 							<p>
@@ -202,7 +203,7 @@ export function ListingDetailPage() {
 								<TableCell>{v.title}</TableCell>
 								<TableCell>{v.price ?? "-"}</TableCell>
 								<TableCell>{v.location ?? "-"}</TableCell>
-								<TableCell>{new Date(v.seenAt).toLocaleString()}</TableCell>
+								<TableCell>{formatDateTime(v.seenAt)}</TableCell>
 								<TableCell>
 									{v.hasHtml ? (
 										<Button variant="ghost" size="xs" asChild>
@@ -260,7 +261,7 @@ export function ListingDetailPage() {
 											"-"
 										)}
 									</TableCell>
-									<TableCell>{new Date(d.seenAt).toLocaleString()}</TableCell>
+									<TableCell>{formatDateTime(d.seenAt)}</TableCell>
 									<TableCell>
 										{d.hasHtml ? (
 											<Button variant="ghost" size="xs" asChild>
