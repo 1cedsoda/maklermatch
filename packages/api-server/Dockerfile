@@ -39,12 +39,14 @@ WORKDIR /app
 COPY --from=install --chown=appuser:appuser /app/node_modules ./node_modules
 COPY --from=install --chown=appuser:appuser /app/packages/api-types/node_modules ./packages/api-types/node_modules
 COPY --from=install --chown=appuser:appuser /app/packages/api-server/node_modules ./packages/api-server/node_modules
+COPY --from=install --chown=appuser:appuser /app/packages/agent/node_modules ./packages/agent/node_modules
 
 # Workspace root config (changes rarely)
 COPY --chown=appuser:appuser package.json bun.lock tsconfig.json ./
 
 # Dependency packages (change less often than main service)
 COPY --chown=appuser:appuser packages/api-types/ ./packages/api-types/
+COPY --chown=appuser:appuser packages/agent/ ./packages/agent/
 
 # Main service source (changes most often)
 COPY --chown=appuser:appuser packages/api-server/ ./packages/api-server/
